@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">TOLONG.IN</string>
+    <string name="pilih_akun">Pilih akun</string>
+    <string name="close">Close</string>
+    <string name="logo">Logo</string>
+    <string name="app_display_name">Tolong.in</string>
+    <string name="pilih_akun_subtitle">Lanjutkan pendaftaran atau masuk dengan Akun\nGoogle Anda</string>
+    <string name="sample_name_1">Brandon</string>
+    <string name="sample_email_1">brandon@pristine.com</string>
+    <string name="sample_name_2">Gus Miftah</string>
+    <string name="sample_email_2">gusmiftah@gmail.com</string>
+    <string name="gunakan_akun_lain">Gunakan akun lain</string>
+    <string name="footer_disclaimer_start">Untuk melanjutkan, Google akan membagikan nama, alamat email, preferensi bahasa, dan foto profil Anda dengan Tolong.in. Sebelum menggunakan aplikasi ini, Anda dapat meninjau </string>
+    <string name="kebijakan_privasi">kebijakan privasi</string>
+    <string name="dan"> dan </string>
+    <string name="persyaratan_layanan">persyaratan layanan</string>
+    <string name="footer_disclaimer_end"> Google.</string>
+</resources>
