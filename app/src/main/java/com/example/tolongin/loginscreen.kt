@@ -161,6 +161,13 @@ fun LoginScreen(navController: NavController) {
                                 if (res?.status == "success") {
                                     Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
 
+                                    // ====================================================================
+                                    // TAMBAHAN LANGKAH 1: SIMPAN EMAIL KE MEMORI HP
+                                    // ====================================================================
+                                    val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+                                    sharedPreferences.edit().putString("USER_EMAIL", email).apply()
+                                    // ====================================================================
+
                                     // PINDAH KE LAYAR LOKASI
                                     navController.navigate("layarlokasi") {
                                         popUpTo("login") { inclusive = true }

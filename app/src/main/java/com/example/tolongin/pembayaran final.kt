@@ -35,15 +35,25 @@ import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-// TAMBAHAN NO 4: Memasukkan NavController ke dalam parameter fungsi
 fun QrisPaymentScreen(
     navController: NavController,
     namaLayanan: String = "Cleaning Plus",
     totalHarga: String = "$149.00",
     idTransaksi: String = "TRX-772910"
 ) {
-
     val context = LocalContext.current
+
+    // ====================================================================
+    // 1. KODE BARU: AMBIL SEMUA DATA DINAMIS DARI MEMORI HP (SHAREDPREFERENCES)
+    // ====================================================================
+    val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+    val emailLogin        = sharedPreferences.getString("USER_EMAIL", "user@gmail.com") ?: "user@gmail.com"
+    val tanggalLogin      = sharedPreferences.getString("SELECTED_DATE", "Belum Pilih Tanggal") ?: "Belum Pilih Tanggal"
+    val namaLayananLogin  = sharedPreferences.getString("NAMALAYANAN", namaLayanan) ?: namaLayanan
+    val hargaLayananLogin = sharedPreferences.getString("HARGALAYANAN", totalHarga) ?: totalHarga
+    val trxIdLogin        = sharedPreferences.getString("TRX_ID", idTransaksi) ?: idTransaksi
+    // ====================================================================
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -55,7 +65,6 @@ fun QrisPaymentScreen(
                     )
                 },
                 navigationIcon = {
-                    // Berfungsi untuk kembali ke layar sebelumnya
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color(0xff0084ff))
                     }
@@ -89,8 +98,9 @@ fun QrisPaymentScreen(
                     color = Color(0xff4e5a81),
                     style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 )
+                // 2. PERBAIKAN: Menampilkan harga sesuai pilihan paket (Rumah / Kos)
                 Text(
-                    text = totalHarga,
+                    text = hargaLayananLogin,
                     color = Color(0xff212d51),
                     style = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Black)
                 )
@@ -172,34 +182,33 @@ fun QrisPaymentScreen(
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("ID Transaksi", color = Color(0xff4e5a81), fontSize = 12.sp)
-                    Text("#$idTransaksi", color = Color(0xff212d51), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    // 3. PERBAIKAN: Menampilkan ID Transaksi acak (TRX) di UI secara dinamis
+                    Text("#$trxIdLogin", color = Color(0xff212d51), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // 5. TOMBOL SAYA SUDAH BAYAR (TAMBAHAN NO 4: Navigasi ke Daftar Pesanan)
+            // 5. TOMBOL SAYA SUDAH BAYAR
             Button(
                 onClick = {
-
                     val apiService = RetrofitClient.instance
 
+                    // 4. PERBAIKAN: Mengirim seluruh data dinamis hasil SharedPreferences ke database MySQL via PHP
                     apiService.simpanPemesanan(
-                        idTransaksi,
-                        "user@gmail.com",
-                        namaLayanan,
-                        "24 Mei 2025",
-                        "Lunas",
-                        totalHarga
+                        trxIdLogin,        // ID Transaksi acak (misal: TRX48291)
+                        emailLogin,        // Email user yang sedang login
+                        namaLayananLogin,  // Paket Kebersihan Rumah / Kos
+                        tanggalLogin,      // Tanggal pilihan user
+                        "Lunas",           // Status pembayaran
+                        hargaLayananLogin  // Harga paket aktual
                     ).enqueue(object : Callback<ResponseModel> {
 
                         override fun onResponse(
                             call: Call<ResponseModel>,
                             response: Response<ResponseModel>
                         ) {
-
                             if (response.isSuccessful) {
-
                                 Toast.makeText(
                                     context,
                                     "Pembayaran berhasil",
@@ -214,7 +223,6 @@ fun QrisPaymentScreen(
                             call: Call<ResponseModel>,
                             t: Throwable
                         ) {
-
                             Toast.makeText(
                                 context,
                                 "Gagal: ${t.message}",
@@ -246,7 +254,7 @@ fun QrisPaymentScreen(
             }
 
             TextButton(
-                onClick = { navController.popBackStack() }, // Balik ke layar pilih metode pembayaran
+                onClick = { navController.popBackStack() },
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 Text("Ubah metode pembayaran", color = Color(0xff005ab2), fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -262,7 +270,7 @@ fun QrisPaymentScreen(
 private fun BodyPreview() {
     MaterialTheme {
         QrisPaymentScreen(
-            navController = rememberNavController(), // Supaya preview tidak error
+            navController = rememberNavController(),
             namaLayanan = "Cleaning Plus",
             totalHarga = "$149.00",
             idTransaksi = "TRX-772910"

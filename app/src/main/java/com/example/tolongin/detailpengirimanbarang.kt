@@ -13,18 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.tolongin.viewmodel.PesananViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.tooling.preview.Preview
 
 private val BgPage     = Color(0xFFF0F2FA)
 private val Primary    = Color(0xFF005AB2)
@@ -52,12 +50,13 @@ fun DetailPengirimanScreen(
     var nomorHP           by remember { mutableStateOf(pesanan.nomorHP) }
     var catatan           by remember { mutableStateOf(pesanan.catatanHelper) }
 
-    data class Paket(val nama: String, val berat: String, val icon: String)
+    data class Paket(val nama: String, val berat: String, val icon: String, val harga: Int)
+
     val paketList = listOf(
-        Paket("Paket Kecil",  "MAKS 5 KG",        "📦"),
-        Paket("Paket Sedang", "5-15 KG",           "🗃"),
-        Paket("Barang Besar", "15-50 KG",          "🚛"),
-        Paket("Fragile",      "PERLU BUBBLE WRAP", "🫙")
+        Paket("Paket Kecil",  "MAKS 5 KG",        "📦", 10000),
+        Paket("Paket Sedang", "5-15 KG",           "🗃", 20000),
+        Paket("Barang Besar", "15-50 KG",          "🚛", 45000),
+        Paket("Fragile",      "PERLU BUBBLE WRAP", "🫙", 25000)
     )
 
     Box(modifier = Modifier.fillMaxSize().background(BgPage)) {
@@ -86,36 +85,15 @@ fun DetailPengirimanScreen(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Dot + garis vertikal
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(top = 4.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(Color(0xFF10B981))
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .width(2.dp)
-                                    .height(52.dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(Color(0xFFA0ACD7), Color(0xFFA0ACD7))
-                                        )
-                                    )
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(Color(0xFFB31B25))
-                            )
+                            Box(modifier = Modifier.size(10.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xFF10B981)))
+                            Box(modifier = Modifier.width(2.dp).height(52.dp).background(Brush.verticalGradient(listOf(Color(0xFFA0ACD7), Color(0xFFA0ACD7)))))
+                            Box(modifier = Modifier.size(10.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xFFB31B25)))
                         }
 
-                        // Input lokasi
                         Column(
                             verticalArrangement = Arrangement.spacedBy(14.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -135,16 +113,10 @@ fun DetailPengirimanScreen(
                                     BasicTextField(
                                         value = lokasiJemput,
                                         onValueChange = { lokasiJemput = it },
-                                        textStyle = TextStyle(
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = TextDark,
-                                            lineHeight = 1.4.em
-                                        ),
+                                        textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium, color = TextDark, lineHeight = 1.4.em),
                                         modifier = Modifier.weight(1f).padding(end = 8.dp)
                                     )
-                                    Text("⇅", color = Color(0xFF4493FF),
-                                        style = TextStyle(fontSize = 18.sp))
+                                    Text("⇅", color = Color(0xFF4493FF), style = TextStyle(fontSize = 18.sp))
                                 }
                             }
 
@@ -160,29 +132,19 @@ fun DetailPengirimanScreen(
                                 BasicTextField(
                                     value = lokasiTujuan,
                                     onValueChange = { lokasiTujuan = it },
-                                    textStyle = TextStyle(
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = TextDark,
-                                        lineHeight = 1.4.em
-                                    ),
+                                    textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium, color = TextDark, lineHeight = 1.4.em),
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
                     }
 
-                    // Tambah pemberhentian
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("⊕", color = Primary, style = TextStyle(fontSize = 16.sp))
-                        Text(
-                            "Tambah pemberhentian",
-                            color = Primary,
-                            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        )
+                        Text("Tambah pemberhentian", color = Primary, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
                     }
                 }
             }
@@ -207,12 +169,18 @@ fun DetailPengirimanScreen(
                                         .shadow(
                                             if (dipilih) 8.dp else 3.dp,
                                             RoundedCornerShape(20.dp),
-                                            spotColor = if (dipilih) Primary.copy(alpha = 0.25f)
-                                            else Color(0xFF3A5A9E).copy(alpha = 0.05f)
+                                            spotColor = if (dipilih) Primary.copy(alpha = 0.25f) else Color(0xFF3A5A9E).copy(alpha = 0.05f)
                                         )
                                         .clip(RoundedCornerShape(20.dp))
                                         .background(if (dipilih) Primary else Color.White)
-                                        .clickable { jenisPaketDipilih = paket.nama }
+                                        // ====================================================================
+                                        // PERBAIKAN SAKTI: BEGITU DIKLIK LANGSUNG UPDATE HARGA VIEWMODEL
+                                        // ====================================================================
+                                        .clickable {
+                                            jenisPaketDipilih = paket.nama
+                                            viewModel.updateJenisPaket(paket.nama, paket.berat, paket.harga)
+                                        }
+                                        // ====================================================================
                                         .padding(18.dp)
                                 ) {
                                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -232,7 +200,6 @@ fun DetailPengirimanScreen(
                                     }
                                 }
                             }
-                            // Isi sisa kolom jika baris terakhir ganjil
                             if (baris.size < 2) {
                                 Spacer(modifier = Modifier.weight(1f))
                             }
@@ -248,11 +215,7 @@ fun DetailPengirimanScreen(
                         "DETAIL BARANG", color = TextMid,
                         style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
                     )
-                    Text(
-                        "Deskripsi Barang",
-                        color = Color(0xFFA0ACD7),
-                        style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                    )
+                    Text("Deskripsi Barang", color = Color(0xFFA0ACD7), style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -262,11 +225,7 @@ fun DetailPengirimanScreen(
                             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 48.dp)
                     ) {
                         if (deskripsi.isEmpty()) {
-                            Text(
-                                "Contoh: Dokumen penting, kue ulang tahun...",
-                                color = TextLight,
-                                style = TextStyle(fontSize = 14.sp, lineHeight = 1.5.em)
-                            )
+                            Text("Contoh: Dokumen penting, kue ulang tahun...", color = TextLight, style = TextStyle(fontSize = 14.sp, lineHeight = 1.5.em))
                         }
                         BasicTextField(
                             value = deskripsi,
@@ -288,8 +247,7 @@ fun DetailPengirimanScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .shadow(2.dp, RoundedCornerShape(16.dp),
-                                ambientColor = Color(0xFF3A5A9E).copy(alpha = 0.05f))
+                            .shadow(2.dp, RoundedCornerShape(16.dp), ambientColor = Color(0xFF3A5A9E).copy(alpha = 0.05f))
                             .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
                             .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
@@ -314,7 +272,6 @@ fun DetailPengirimanScreen(
                         "PENERIMA", color = TextMid,
                         style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
                     )
-                    // Nama
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -333,7 +290,6 @@ fun DetailPengirimanScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                    // No HP
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -371,11 +327,7 @@ fun DetailPengirimanScreen(
                             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 48.dp)
                     ) {
                         if (catatan.isEmpty()) {
-                            Text(
-                                "Titip ke resepsionis jika saya tidak di tempat...",
-                                color = Color(0xFF6B7280),
-                                style = TextStyle(fontSize = 14.sp, lineHeight = 1.5.em)
-                            )
+                            Text("Titip ke resepsionis jika saya tidak di tempat...", color = Color(0xFF6B7280), style = TextStyle(fontSize = 14.sp, lineHeight = 1.5.em))
                         }
                         BasicTextField(
                             value = catatan,
@@ -395,21 +347,13 @@ fun DetailPengirimanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "HELPER TERPILIH", color = TextMid,
-                            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
-                        )
-                        Text(
-                            "Lihat helper lain", color = Primary,
-                            style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        )
+                        Text("HELPER TERPILIH", color = TextMid, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp))
+                        Text("Lihat helper lain", color = Primary, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold))
                     }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .shadow(12.dp, RoundedCornerShape(24.dp),
-                                ambientColor = Color(0xFF3A5A9E).copy(alpha = 0.07f),
-                                spotColor   = Color(0xFF3A5A9E).copy(alpha = 0.1f))
+                            .shadow(12.dp, RoundedCornerShape(24.dp), ambientColor = Color(0xFF3A5A9E).copy(alpha = 0.07f), spotColor = Color(0xFF3A5A9E).copy(alpha = 0.1f))
                             .clip(RoundedCornerShape(24.dp))
                             .background(Color.White)
                             .padding(16.dp)
@@ -419,46 +363,20 @@ fun DetailPengirimanScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Avatar
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .clip(RoundedCornerShape(9999.dp))
-                                    .background(Color(0xFF8FA8C8))
-                            ) {
-                                Text("BD", color = Color.White,
-                                    style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold))
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(52.dp).clip(RoundedCornerShape(9999.dp)).background(Color(0xFF8FA8C8))) {
+                                Text("BD", color = Color.White, style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold))
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        pesanan.helperName, color = TextDark,
-                                        style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                    )
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(pesanan.helperName, color = TextDark, style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold))
                                     Text("★", color = Color(0xFFF59E0B), style = TextStyle(fontSize = 10.sp))
-                                    Text(
-                                        pesanan.helperRating, color = Color(0xFFF59E0B),
-                                        style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    )
+                                    Text(pesanan.helperRating, color = Color(0xFFF59E0B), style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold))
                                 }
-                                Text(
-                                    pesanan.helperSpesialis, color = TextMid,
-                                    style = TextStyle(fontSize = 11.sp)
-                                )
+                                Text(pesanan.helperSpesialis, color = TextMid, style = TextStyle(fontSize = 11.sp))
                                 Spacer(Modifier.height(4.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(
-                                        "1.2 km dari Anda", color = Color(0xFF059669),
-                                        style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                    )
-                                    Text(
-                                        "✓ Verified", color = Color(0xFF2563EB),
-                                        style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                    )
+                                    Text("1.2 km dari Anda", color = Color(0xFF059669), style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold))
+                                    Text("✓ Verified", color = Color(0xFF2563EB), style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold))
                                 }
                             }
                             Text("›", color = Color(0xFFCBD5E1), style = TextStyle(fontSize = 22.sp))
@@ -482,52 +400,28 @@ fun DetailPengirimanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "RINGKASAN BIAYA", color = Primary,
-                            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(9999.dp))
-                                .background(Color.White)
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                "Jarak: ${pesanan.jarak} km", color = Primary,
-                                style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            )
+                        Text("RINGKASAN BIAYA", color = Primary, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp))
+                        Box(modifier = Modifier.clip(RoundedCornerShape(9999.dp)).background(Color.White).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                            Text("Jarak: ${pesanan.jarak} km", color = Primary, style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold))
                         }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Text("Biaya Pengiriman", color = TextMid, style = TextStyle(fontSize = 13.sp))
-                            Text("Rp ${"%,d".format(pesanan.biayaPengiriman).replace(',', '.')}",
-                                color = TextDark, style = TextStyle(fontSize = 13.sp))
+                            Text("Rp ${"%,d".format(pesanan.biayaPengiriman).replace(',', '.')}", color = TextDark, style = TextStyle(fontSize = 13.sp))
                         }
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Text("Asuransi (Proteksi Barang)", color = TextMid, style = TextStyle(fontSize = 13.sp))
-                            Text("Rp ${"%,d".format(pesanan.biayaAsuransi).replace(',', '.')}",
-                                color = TextDark, style = TextStyle(fontSize = 13.sp))
+                            Text("Rp ${"%,d".format(pesanan.biayaAsuransi).replace(',', '.')}", color = TextDark, style = TextStyle(fontSize = 13.sp))
                         }
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Text("Biaya Platform", color = TextMid, style = TextStyle(fontSize = 13.sp))
-                            Text("Rp ${"%,d".format(pesanan.biayaPlatform).replace(',', '.')}",
-                                color = TextDark, style = TextStyle(fontSize = 13.sp))
+                            Text("Rp ${"%,d".format(pesanan.biayaPlatform).replace(',', '.')}", color = TextDark, style = TextStyle(fontSize = 13.sp))
                         }
                         HorizontalDivider(color = Primary.copy(alpha = 0.15f))
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "Total Pembayaran", color = TextDark,
-                                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                pesanan.totalBayarFormatted, color = Primary,
-                                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            )
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Text("Total Pembayaran", color = TextDark, style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                            Text(pesanan.totalBayarFormatted, color = Primary, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold))
                         }
                     }
                 }
@@ -536,21 +430,9 @@ fun DetailPengirimanScreen(
 
         // ── TOP APP BAR ──────────────────────────────────────────────────
         TopAppBar(
-            title = {
-                Text(
-                    "Detail Pengiriman", color = TextDark,
-                    style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp)
-                )
-            },
+            title = { Text("Detail Pengiriman", color = TextDark, style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp)) },
             navigationIcon = {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(Color(0xFFEFF0FF))
-                ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(start = 8.dp).size(36.dp).clip(RoundedCornerShape(9999.dp)).background(Color(0xFFEFF0FF))) {
                     Text("←", color = Primary, style = TextStyle(fontSize = 16.sp))
                 }
             },
@@ -563,22 +445,17 @@ fun DetailPengirimanScreen(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        0f to BgPage.copy(alpha = 0f),
-                        0.25f to BgPage.copy(alpha = 0.95f),
-                        1f to BgPage
-                    )
-                )
+                .background(Brush.verticalGradient(0f to BgPage.copy(alpha = 0f), 0.25f to BgPage.copy(alpha = 0.95f), 1f to BgPage))
                 .padding(start = 24.dp, end = 24.dp, bottom = 32.dp, top = 20.dp)
         ) {
             Button(
                 onClick = {
+                    val paketTerpilih = paketList.find { it.nama == jenisPaketDipilih }
+                    val hargaOngkirTerpilih = paketTerpilih?.harga ?: 10000
+                    val beratTerpilih = paketTerpilih?.berat ?: ""
+
                     viewModel.updateLokasi(lokasiJemput, lokasiTujuan)
-                    viewModel.updateJenisPaket(
-                        jenisPaketDipilih,
-                        paketList.find { it.nama == jenisPaketDipilih }?.berat ?: ""
-                    )
+                    viewModel.updateJenisPaket(jenisPaketDipilih, beratTerpilih, hargaOngkirTerpilih)
                     viewModel.updateDetailBarang(deskripsi)
                     viewModel.updateWaktu(waktu)
                     viewModel.updatePenerima(namaPenerima, nomorHP)
@@ -589,10 +466,7 @@ fun DetailPengirimanScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Primary),
                 modifier = Modifier.fillMaxWidth().height(54.dp)
             ) {
-                Text(
-                    "Lanjut ke Konfirmasi →", color = Color.White,
-                    style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                )
+                Text("Lanjut ke Konfirmasi →", color = Color.White, style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold))
             }
         }
     }

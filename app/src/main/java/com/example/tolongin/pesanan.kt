@@ -1,5 +1,6 @@
 package com.example.tolongin
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,12 +15,14 @@ import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,38 +30,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.gson.annotations.SerializedName
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-// --- MODEL DATA ---
-data class PesananModel(
-    val idTransaksi: String,
-    val namaLayanan: String,
-    val tanggal: String,
-    val status: String,
-    val totalHarga: String
+// MODEL DATA STRUKTUR UTAMA
+data class pesananmodel(
+    @SerializedName("id_transaksi") val idTransaksi: String,
+    @SerializedName("email") val email: String,
+    @SerializedName("nama_layanan") val namaLayanan: String,
+    @SerializedName("tanggal") val tanggal: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("total_harga") val totalHarga: String
 )
 
 @Composable
 fun PesananScreen(navController: NavController) {
-    // State untuk Tab: 0 = Mendatang, 1 = Riwayat
+    val context = LocalContext.current
+
+    val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+    val emailLogin = sharedPreferences.getString("USER_EMAIL", "user@gmail.com") ?: "user@gmail.com"
+
     var selectedTab by remember { mutableStateOf(0) }
+    var isLoading by remember { mutableStateOf(true) }
+    var pesananList by remember { mutableStateOf(listOf<pesananmodel>()) }
 
-    // State untuk memuat data dari database
-    var isLoading by remember { mutableStateOf(false) }
-    var pesananList by remember { mutableStateOf(listOf<PesananModel>()) }
-
-    // --- LOGIKA MENARIK DATA DARI DATABASE ---
     LaunchedEffect(selectedTab) {
         isLoading = true
-        // --- SIMULASI TARIK DATA (GANTI DENGAN RETROFIT NANTI) ---
-        if (selectedTab == 0) {
-            pesananList = listOf(
-                PesananModel("TRX-0012A", "Cleaning Plus", "12 Mei 2026", "Menunggu", "Rp 150.000"),
-                PesananModel("TRX-0013B", "Cuci AC", "15 Mei 2026", "Dikonfirmasi", "Rp 75.000")
-            )
-        } else {
-            pesananList = emptyList()
-        }
-        isLoading = false
+        RetrofitClient.instance.getPesanan(emailLogin).enqueue(object : Callback<List<pesananmodel>> {
+            override fun onResponse(call: Call<List<pesananmodel>>, response: Response<List<pesananmodel>>) {
+                isLoading = false
+                if (response.isSuccessful) {
+                    val allPesanan = response.body() ?: emptyList()
+                    pesananList = if (selectedTab == 0) {
+                        allPesanan.filter { it.status != "Selesai" }
+                    } else {
+                        allPesanan.filter { it.status == "Selesai" }
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<List<pesananmodel>>, t: Throwable) {
+                isLoading = false
+                Toast.makeText(context, "Gagal memuat data: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     Scaffold(
@@ -73,7 +90,6 @@ fun PesananScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- HEADER ---
             Text(
                 text = "Pesanan Saya",
                 fontSize = 32.sp,
@@ -89,7 +105,6 @@ fun PesananScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- CUSTOM TAB SWITCHER ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -113,15 +128,13 @@ fun PesananScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- KONTEN DAFTAR PESANAN ---
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFF2563EB))
                 }
             } else if (pesananList.isEmpty()) {
-                // TAMPILAN JIKA BELUM ADA PESANAN
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -148,21 +161,19 @@ fun PesananScreen(navController: NavController) {
                     }
                 }
             } else {
-                // TAMPILAN JIKA ADA PESANAN
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    modifier = Modifier.fillMaxSize().weight(1f)
                 ) {
-                    items(pesananList) { pesanan ->
-                        CardPesanan(pesanan)
+                    items(pesananList) { itemPesanan ->
+                        CardPesanan(itemPesanan)
                     }
                 }
             }
         }
     }
 }
-
-// --- KOMPONEN PENDUKUNG ---
 
 @Composable
 fun TabButton(text: String, isSelected: Boolean, modifier: Modifier, onClick: () -> Unit) {
@@ -185,7 +196,7 @@ fun TabButton(text: String, isSelected: Boolean, modifier: Modifier, onClick: ()
 }
 
 @Composable
-fun CardPesanan(pesanan: PesananModel) {
+fun CardPesanan(pesanan: pesananmodel) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -241,12 +252,11 @@ fun CardPesanan(pesanan: PesananModel) {
     }
 }
 
-// --- NAVBAR TERBARU (SAMA DENGAN HOME) ---
 @Composable
 fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier = Modifier) {
     val navItems = listOf(
         Icons.Outlined.Home to "HOME",
-        Icons.Filled.ListAlt to "ORDERS", // Ikon ORDERS menggunakan versi Filled (Tebal)
+        Icons.Filled.ListAlt to "ORDERS",
         Icons.Outlined.ChatBubbleOutline to "MESSAGES",
         Icons.Outlined.Person to "PROFILE"
     )
@@ -266,7 +276,6 @@ fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier 
         ) {
             navItems.forEach { (icon, label) ->
                 val active = label == "ORDERS"
-
                 val bgColor = if (active) Color(0xFFF0F5FF) else Color.Transparent
                 val contentColor = if (active) Color(0xFF2563EB) else Color(0xFF94A3B8)
 
@@ -279,7 +288,7 @@ fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier 
                         .clickable {
                             when (label) {
                                 "HOME" -> {
-                                    if (active) return@clickable // Biar nggak reload kalau ditekan di halaman yang sama
+                                    if (active) return@clickable
                                     navController.navigate("beranda") {
                                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                                         launchSingleTop = true
@@ -288,15 +297,9 @@ fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier 
                                 }
                                 "ORDERS" -> {
                                     if (active) return@clickable
-                                    navController.navigate("daftar_pesanan") {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
                                 }
                                 "MESSAGES" -> {
                                     if (active) return@clickable
-                                    // INI JALUR BARU MENUJU LAYAR PESAN
                                     navController.navigate("pesan") {
                                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                                         launchSingleTop = true

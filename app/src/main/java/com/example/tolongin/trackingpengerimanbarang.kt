@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.tolongin.viewmodel.PesananViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 enum class StatusType { DONE, ACTIVE, PENDING }
 

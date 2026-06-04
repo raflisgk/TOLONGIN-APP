@@ -28,13 +28,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Deklarasi Navigasi & ViewModel cukup 1 kali di sini
                     val navController = rememberNavController()
                     val pesananViewModel: PesananViewModel = viewModel()
 
-                    // ==========================================
-                    // SATU NAVHOST UTAMA UNTUK SEMUA LAYAR
-                    // ==========================================
                     NavHost(navController = navController, startDestination = "splash") {
 
                         composable("splash") {
@@ -44,7 +40,6 @@ class MainActivity : ComponentActivity() {
                                     popUpTo("splash") { inclusive = true }
                                 }
                             }
-
                             HtmlBody()
                         }
 
@@ -52,62 +47,46 @@ class MainActivity : ComponentActivity() {
                             OnboardingPagerScreen(navController)
                         }
 
-                        // --- 1. RUTE LAMA MAS ---
                         composable("login") { LoginScreen(navController) }
                         composable("beranda") { HomeScreen(navController) }
                         composable("detail_pembersihan") { PembersihanScreen(navController) }
-                        composable(
-                            "pemesanan/{namaLayanan}/{hargaLayanan}"
-                        ) { backStackEntry ->
 
-                            val namaLayanan =
-                                backStackEntry.arguments?.getString("namaLayanan") ?: ""
-
-                            val hargaLayanan =
-                                backStackEntry.arguments?.getString("hargaLayanan") ?: ""
-
-                            FormPemesananScreen(
-                                navController = navController,
-                                namaLayanan = namaLayanan,
-                                hargaLayanan = hargaLayanan
-                            )
+                        composable("pemesanan/{namaLayanan}/{hargaLayanan}") { backStackEntry ->
+                            val namaLayanan = backStackEntry.arguments?.getString("namaLayanan") ?: ""
+                            val hargaLayanan = backStackEntry.arguments?.getString("hargaLayanan") ?: ""
+                            FormPemesananScreen(navController, namaLayanan, hargaLayanan)
                         }
+
                         composable("pemesanan_titip_beli") { FormTitipBeliScreen(navController = navController) }
 
-                        composable(
-                            "pembayaran/{namaLayanan}/{hargaLayanan}/{tanggal}/{alamat}/{waktu}"
-                        ) { backStackEntry ->
-
-                            val namaLayanan =
-                                backStackEntry.arguments?.getString("namaLayanan") ?: ""
-
-                            val hargaLayanan =
-                                backStackEntry.arguments?.getString("hargaLayanan") ?: ""
-
-                            val tanggal =
-                                backStackEntry.arguments?.getString("tanggal") ?: ""
-
-                            val alamat =
-                                backStackEntry.arguments?.getString("alamat") ?: ""
-
-                            val waktu =
-                                backStackEntry.arguments?.getString("waktu") ?: ""
-
-                            PembayaranScreen(
-                                navController,
-                                namaLayanan,
-                                hargaLayanan,
-                                tanggal,
-                                alamat,
-                                waktu
-                            )
+                        composable("pembayaran/{namaLayanan}/{hargaLayanan}/{tanggal}/{alamat}/{waktu}") { backStackEntry ->
+                            val namaLayanan = backStackEntry.arguments?.getString("namaLayanan") ?: ""
+                            val hargaLayanan = backStackEntry.arguments?.getString("hargaLayanan") ?: ""
+                            val tanggal = backStackEntry.arguments?.getString("tanggal") ?: ""
+                            val alamat = backStackEntry.arguments?.getString("alamat") ?: ""
+                            val waktu = backStackEntry.arguments?.getString("waktu") ?: ""
+                            PembayaranScreen(navController, namaLayanan, hargaLayanan, tanggal, alamat, waktu)
                         }
 
+                        // Rute QRIS Lama (Jasa Pembersihan)
                         composable("qris/{idTransaksi}/{totalHarga}") { backStackEntry ->
                             val idTransaksi = backStackEntry.arguments?.getString("idTransaksi") ?: ""
                             val totalHarga = backStackEntry.arguments?.getString("totalHarga") ?: ""
                             QrisPaymentScreen(navController, "Cleaning Plus", totalHarga, idTransaksi)
                         }
+
+                        // ====================================================================
+                        // KODE BARU: RUTE QRIS MANDIRI UNTUK FITUR TITIP BELI VIA SHAREDPREFS
+                        // ====================================================================
+                        composable("qris_payment") {
+                            QrisPaymentScreen(
+                                navController = navController,
+                                namaLayanan = "Titip Beli",
+                                totalHarga = "Rp 0",
+                                idTransaksi = "TRX-000000"
+                            )
+                        }
+                        // ====================================================================
 
                         composable("daftar_pesanan") { PesananScreen(navController) }
                         composable("google") { PilihAkunScreen(navController) }
@@ -119,14 +98,10 @@ class MainActivity : ComponentActivity() {
                         composable("layarlokasi") {
                             LayarLokasi(
                                 onAllowClick = {
-                                    navController.navigate("beranda") {
-                                        popUpTo("layarlokasi") { inclusive = true }
-                                    }
+                                    navController.navigate("beranda") { popUpTo("layarlokasi") { inclusive = true } }
                                 },
                                 onSkipClick = {
-                                    navController.navigate("beranda") {
-                                        popUpTo("layarlokasi") { inclusive = true }
-                                    }
+                                    navController.navigate("beranda") { popUpTo("layarlokasi") { inclusive = true } }
                                 }
                             )
                         }
@@ -149,16 +124,10 @@ class MainActivity : ComponentActivity() {
                         composable("tracking/{namaProduk}/{totalBiaya}") { backStackEntry ->
                             val namaProduk = Uri.decode(backStackEntry.arguments?.getString("namaProduk") ?: "Pesanan")
                             val biayaStr = backStackEntry.arguments?.getString("totalBiaya") ?: "0"
-
-                            TrackingPesananScreen(
-                                navController = navController,
-                                namaProduk = namaProduk,
-                                totalBiaya = biayaStr.toIntOrNull() ?: 0
-                            ) // <-- TADI KURUNG INI YANG HILANG MAS
+                            TrackingPesananScreen(navController, namaProduk, biayaStr.toIntOrNull() ?: 0)
                         }
 
-
-                        // --- 2. RUTE MVVM BARU KITA (Form -> Konfirmasi -> Tracking) ---
+                        // --- RUTE MVVM LOGISTIK BARU ---
                         composable("detail_pengiriman") {
                             DetailPengirimanScreen(
                                 viewModel = pesananViewModel,
@@ -170,7 +139,7 @@ class MainActivity : ComponentActivity() {
                             KonfirmasiScreen(
                                 viewModel = pesananViewModel,
                                 onBack = { navController.popBackStack() },
-                                onBayar = { navController.navigate("tracking_mvvm") }
+                                onBayar = { navController.navigate("qris_payment") }
                             )
                         }
 
@@ -178,14 +147,12 @@ class MainActivity : ComponentActivity() {
                             TrackingScreen(
                                 viewModel = pesananViewModel,
                                 onBack = {
-                                    // Kembali ke beranda dan hapus tumpukan layar sebelumnya
                                     navController.navigate("beranda") {
                                         popUpTo("beranda") { inclusive = true }
                                     }
                                 }
                             )
                         }
-
                     }
                 }
             }

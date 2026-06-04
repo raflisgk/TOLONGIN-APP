@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext // 1. PERBAIKAN: IMPORT LOCALCONTEXT SUDAH DITAMBAHKAN
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +42,9 @@ fun FormPemesananScreen(
     namaLayanan: String,
     hargaLayanan: String
 ) {
+    // 2. PERBAIKAN: DEKLARASI CONTEXT DI POSISI PALING ATAS FUNGSI COMPOSABLE
+    val context = LocalContext.current
+
     var selectedDateText by remember { mutableStateOf("Belum Pilih Tanggal") }
     var selectedTime by remember { mutableStateOf("Siang") }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -77,7 +81,7 @@ fun FormPemesananScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 120.dp)
         ) {
-            // --- TOP BAR (IKON KANAN ATAS SUDAH DIHAPUS) ---
+            // --- TOP BAR ---
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -177,9 +181,20 @@ fun FormPemesananScreen(
                 }
                 Button(
                     onClick = {
+                        // ====================================================================
+                        // SIMPAN NAMA LAYANAN DAN HARGA AKTUAL KE MEMORI HP
+                        // ====================================================================
+                        val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+                        sharedPreferences.edit().apply {
+                            putString("SELECTED_DATE", selectedDateText)
+                            putString("NAMALAYANAN", namaLayanan)  // Mengambil dari parameter list yang diklik
+                            putString("HARGALAYANAN", hargaLayanan) // Mengambil dari harga paket yang diklik
+                            apply()
+                        }
+
                         navController.navigate(
                             "pembayaran/" +
-                                    "Pembersihan/" +
+                                    "$namaLayanan/" + // Ganti tulisan "Pembersihan/" menjadi dinamis $namaLayanan
                                     "$hargaLayanan/" +
                                     "$selectedDateText/" +
                                     "Rumah Utama (Alex)/" +

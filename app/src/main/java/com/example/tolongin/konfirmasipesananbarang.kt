@@ -1,5 +1,6 @@
 package com.example.tolongin.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -33,7 +35,10 @@ fun KonfirmasiScreen(
     onBack: () -> Unit,
     onBayar: () -> Unit
 ) {
+    // 1. Ambil context untuk SharedPreferences
+    val context = LocalContext.current
     val p by viewModel.pesanan.collectAsState()
+
     val bgPage = Color(0xFFF0F2FA)
     val primary = Color(0xFF005AB2)
     val textDark = Color(0xFF212D51)
@@ -295,7 +300,24 @@ fun KonfirmasiScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             Button(
-                onClick = onBayar,
+                // ====================================================================
+                // LOGIKA ALUR PENGIRIMAN: SIMPAN KE SHAREDPREFS SEBELUM PINDAH KE QRIS
+                // ====================================================================
+                onClick = {
+                    val idTrxAcak = "TRX-${(100000..999999).random()}"
+
+                    val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                    sharedPreferences.edit().apply {
+                        putString("NAMALAYANAN", "Titip Barang (${p.jenisPaket})")
+                        putString("HARGALAYANAN", p.totalBayarFormatted)
+                        putString("TRX_ID", idTrxAcak)
+                        putString("SELECTED_DATE", p.waktuJemput)
+                        apply()
+                    }
+
+                    // Memicu aksi onBayar yang telah dihubungkan ke rute QRIS
+                    onBayar()
+                },
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = primary),
                 modifier = Modifier.fillMaxWidth().height(54.dp)
@@ -304,8 +326,6 @@ fun KonfirmasiScreen(
                     Text("🔒", style = TextStyle(fontSize = 14.sp))
                     Text("Bayar Sekarang • ${p.totalBayarFormatted}", color = Color.White,
                         style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
-
-
                 }
             }
         }

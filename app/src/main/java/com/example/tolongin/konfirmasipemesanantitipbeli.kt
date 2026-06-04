@@ -1,5 +1,6 @@
 package com.example.tolongin
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +31,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import java.text.NumberFormat
 import java.util.Locale
-import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +41,9 @@ fun KonfirmasiPesananScreen(
     alamat: String = "-",
     hargaProduk: Int = 0
 ) {
+    // 1. Ambil context untuk SharedPreferences
+    val context = LocalContext.current
+
     // --- MENGHITUNG OTOMATIS BIAYA ---
     val biayaLayanan = 1000
     val biayaPengiriman = 15000
@@ -88,10 +92,27 @@ fun KonfirmasiPesananScreen(
                         }
                     )
                     Button(
-                        // --- PERBAIKAN DI SINI ---
+                        // ====================================================================
+                        // LOGIKA ALUR BARU: TITIP DATA KE MEMORI LALU MASUK KE HALAMAN QRIS
+                        // ====================================================================
                         onClick = {
-                            // Kita kirim namaProduk dan totalBiaya ke rute tracking
-                            navController.navigate("tracking/$namaProduk/$totalBiaya")
+                            // Generate ID Transaksi acak dengan prefix TRX standard
+                            val idTrxAcak = "TRX-${(100000..999999).random()}"
+                            val hargaFormatted = formatRupiah(totalBiaya)
+
+                            // Simpan detail Titip Beli ke SharedPreferences agar dibaca otomatis oleh QrisPaymentScreen
+                            val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                            sharedPreferences.edit().apply {
+                                putString("NAMALAYANAN", "Titip Beli ($namaProduk)")
+                                putString("HARGALAYANAN", hargaFormatted)
+                                putString("TRX_ID", idTrxAcak)
+                                putString("SELECTED_DATE", "Hari ini, Segera")
+                                apply()
+                            }
+
+                            // Navigasi langsung ke halaman QRIS Anda
+                            // Catatan: Sesuaikan "qris_payment" dengan nama rute QRIS yang ada di NavHost Anda
+                            navController.navigate("qris_payment")
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -140,7 +161,6 @@ fun KonfirmasiPesananScreen(
                             Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        // UPDATE NAMA PRODUK DARI FORM
                         Text(
                             text = namaProduk,
                             fontSize = 20.sp,
@@ -177,7 +197,6 @@ fun KonfirmasiPesananScreen(
                     ) {
                         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             InfoRowItem(Icons.Default.Inventory, "PRODUK", "Belanja & Antar")
-                            // UPDATE CATATAN DAN ALAMAT DARI FORM
                             InfoRowItem(Icons.Default.Notes, "CATATAN", catatan)
                             InfoRowItem(Icons.Default.LocationOn, "ALAMAT", alamat)
 
@@ -220,23 +239,27 @@ fun KonfirmasiPesananScreen(
                                     .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF005AB2)),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Outlined.CreditCard, contentDescription = null, tint = Color.White)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Tolong Wallet", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E2D5A))
-                                    Text("Saldo: Rp 150.000", fontSize = 12.sp, color = Color.Gray)
+                                    Box(
+                                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF005AB2)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Outlined.CreditCard, contentDescription = null, tint = Color.White)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text("Tolong Wallet", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E2D5A))
+                                        Text("Saldo: Rp 150.000", fontSize = 12.sp, color = Color.Gray)
+                                    }
                                 }
                                 Text("Ganti", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB), modifier = Modifier.clickable { })
                             }
 
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            // STRUK BIAYA TERBARU
                             CostRow("Harga Produk", formatRupiah(hargaProduk))
                             Spacer(modifier = Modifier.height(8.dp))
                             CostRow("Layanan Aplikasi", formatRupiah(biayaLayanan))
@@ -245,7 +268,6 @@ fun KonfirmasiPesananScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Total
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Total Pembayaran", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E2D5A))
                                 Text(formatRupiah(totalBiaya), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))

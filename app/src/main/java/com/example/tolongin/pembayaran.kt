@@ -16,12 +16,14 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember // Tambahan import untuk remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext // 1. PERBAIKAN: IMPORT LOCALCONTEXT UNTUK SHAREDPREFERENCES
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -46,6 +48,16 @@ fun PembayaranScreen(
     alamatDiterima: String = "",
     waktu: String = ""
 ) {
+    // ====================================================================
+    // 2. KODE BARU: DEKLARASI CONTEXT & GENERATE ID TRANSAKSI ACAK (TRX)
+    // ====================================================================
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+
+    // Membuat angka acak 5 digit digabung dengan prefix TRX (Contoh: TRX57432)
+    val randomTrxId = remember { "TRX" + (10000..99999).random().toString() }
+    // ====================================================================
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -219,10 +231,14 @@ fun PembayaranScreen(
 
                 // --- BUTTON & TERMS ---
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    // 3. PERBAIKAN: TOMBOL SEKARANG MENYIMPAN ID TRANSAKSI DAN BERPINDAH SECARA DINAMIS
                     Button(
                         onClick = {
-                            // Navigasi ke halaman sukses atau QRIS
-                            navController.navigate("qris/TRX9901/405000")
+                            // Simpan ID Transaksi acak yang baru saja dibuat ke memori HP
+                            sharedPreferences.edit().putString("TRX_ID", randomTrxId).apply()
+
+                            // Navigasi ke rute QRIS membawa parameter ID acak dan total harga aktual
+                            navController.navigate("qris/$randomTrxId/$totalHarga")
                         },
                         modifier = Modifier.fillMaxWidth().height(68.dp).shadow(6.dp, RoundedCornerShape(16.dp)),
                         shape = RoundedCornerShape(16.dp),
@@ -265,4 +281,3 @@ fun RincianBaris(label: String, harga: String, isBlue: Boolean = false) {
 fun PembayaranPreview() {
     PembayaranScreen(navController = rememberNavController())
 }
-

@@ -43,49 +43,41 @@ interface ApiService {
     @FormUrlEncoded
     @POST("tolongin_api/insert_transaksi.php")
     fun simpanPemesanan(
-
-        @Field("id_transaksi")
-        idTransaksi: String,
-
-        @Field("email")
-        email: String,
-
-        @Field("nama_layanan")
-        namaLayanan: String,
-
-        @Field("tanggal")
-        tanggal: String,
-
-        @Field("status")
-        status: String,
-
-        @Field("total_harga")
-        totalHarga: String
-
+        @Field("id_transaksi") idTransaksi: String,
+        @Field("email") email: String,
+        @Field("nama_layanan") namaLayanan: String,
+        @Field("tanggal") tanggal: String,
+        @Field("status") status: String,
+        @Field("total_harga") totalHarga: String
     ): Call<ResponseModel>
 
     // SIMPAN PESANAN
     @FormUrlEncoded
     @POST("tolongin_api/insert_pesanan.php")
     fun insertPesanan(
-
-        @Field("nama_layanan")
-        namaLayanan: String,
-
-        @Field("harga")
-        harga: String,
-
-        @Field("tanggal")
-        tanggal: String,
-
-        @Field("alamat")
-        alamat: String,
-
-        @Field("waktu")
-        waktu: String,
-
-        @Field("status")
-        status: String
-
+        @Field("nama_layanan") namaLayanan: String,
+        @Field("harga") harga: String,
+        @Field("tanggal") tanggal: String,
+        @Field("alamat") alamat: String,
+        @Field("waktu") waktu: String,
+        @Field("status") status: String
     ): Call<ResponseModel>
+
+    @FormUrlEncoded
+    @POST("tolongin_api/insert_titip_beli.php")
+    fun insertTitipBeli(
+        @Field("id_transaksi") idTransaksi: String,
+        @Field("email") email: String,
+        @Field("nama_layanan") namaLayanan: String,
+        @Field("tanggal") tanggal: String,
+        @Field("status") status: String,
+        @Field("total_harga") totalHarga: String
+    ): Call<ResponseModel>
+
+    // AMBIL DATA PESANAN (MENGGUNAKAN pesananmodel HURUF KECIL SESUAI OPSIA)
+    @FormUrlEncoded
+    @POST("tolongin_api/get_pesanan.php")
+    fun getPesanan(
+        @Field("email") email: String
+    ): Call<List<pesananmodel>>
 }
