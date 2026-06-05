@@ -1,5 +1,8 @@
 package com.example.tolongin
 
+import android.content.Context
+import android.net.Uri
+import android.os.Bundle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext // ── FIX: Import Context
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,11 +35,13 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import java.text.NumberFormat
 import java.util.Locale
-import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FormTitipBeliScreen(navController: NavController) { // NAMA FUNGSI SUDAH DIUBAH
+fun FormTitipBeliScreen(navController: NavController) {
+    // Ambil konteks Android untuk SharedPreferences
+    val context = LocalContext.current
+
     // --- STATE UNTUK MENYIMPAN INPUTAN ---
     var namaProduk by remember { mutableStateOf("") }
     var jumlah by remember { mutableStateOf("1") }
@@ -49,7 +55,6 @@ fun FormTitipBeliScreen(navController: NavController) { // NAMA FUNGSI SUDAH DIU
     val biayaPengiriman = 15000
     val totalBiaya = hargaProduk + biayaLayanan + biayaPengiriman
 
-    // Fungsi format Rupiah
     fun formatRupiah(number: Int): String {
         val format = NumberFormat.getNumberInstance(Locale("id", "ID"))
         return "Rp ${format.format(number)}"
@@ -74,15 +79,24 @@ fun FormTitipBeliScreen(navController: NavController) { // NAMA FUNGSI SUDAH DIU
                 shadowElevation = 16.dp,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
-                PaddingValues(horizontal = 24.dp, vertical = 16.dp)
                 Button(
                     onClick = {
-                        // Encode data agar tidak error jika pelanggan memasukkan spasi atau tanda baca
-                        val safeNama = if(namaProduk.isEmpty()) "Titip Beli" else android.net.Uri.encode(namaProduk)
-                        val safeCatatan = if(catatan.isEmpty()) "-" else android.net.Uri.encode(catatan)
-                        val safeAlamat = if(alamatTujuan.isEmpty()) "-" else android.net.Uri.encode(alamatTujuan)
+                        // ─── AMANKAN DATA KE SHAREDPREFERENCES (HP CACHE) ─────────────
+                        val sharedPref = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                        with(sharedPref.edit()) {
+                            putString("PREF_NAMA_PRODUK", if(namaProduk.isEmpty()) "Titip Beli" else namaProduk)
+                            putString("PREF_CATATAN", if(catatan.isEmpty()) "-" else catatan)
+                            putString("PREF_ALAMAT_TUJUAN", if(alamatTujuan.isEmpty()) "Jl. Raya Rungkut, Surabaya" else alamatTujuan)
+                            apply() // Data resmi terkunci permanen di HP
+                        }
+                        // ─────────────────────────────────────────────────────────────
 
-                        // Kirim data ke rute MainActivity
+                        // Encode data agar tidak error jika pelanggan memasukkan spasi atau tanda baca
+                        val safeNama = if(namaProduk.isEmpty()) "Titip Beli" else Uri.encode(namaProduk)
+                        val safeCatatan = if(catatan.isEmpty()) "-" else Uri.encode(catatan)
+                        val safeAlamat = if(alamatTujuan.isEmpty()) "-" else Uri.encode(alamatTujuan)
+
+                        // Kirim data ke rute MainActivity bawaan Anda
                         val route = "konfirmasi/${safeNama}/${safeCatatan}/${safeAlamat}/${hargaProduk}"
                         navController.navigate(route)
                     },
@@ -117,7 +131,7 @@ fun FormTitipBeliScreen(navController: NavController) { // NAMA FUNGSI SUDAH DIU
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            CustomTextFieldTitipBeli( // NAMA FUNGSI SUDAH DIUBAH
+            CustomTextFieldTitipBeli(
                 label = "NAMA PRODUK / LINK TOKO",
                 value = namaProduk,
                 onValueChange = { namaProduk = it },
@@ -216,7 +230,7 @@ fun FormTitipBeliScreen(navController: NavController) { // NAMA FUNGSI SUDAH DIU
                     Text(text = "Estimasi Biaya", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E2D5A))
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    ReceiptRowTitipBeli("Harga Produk", formatRupiah(hargaProduk)) // NAMA FUNGSI SUDAH DIUBAH
+                    ReceiptRowTitipBeli("Harga Produk", formatRupiah(hargaProduk))
                     Spacer(modifier = Modifier.height(12.dp))
                     ReceiptRowTitipBeli("Layanan Aplikasi", formatRupiah(biayaLayanan))
                     Spacer(modifier = Modifier.height(12.dp))
@@ -248,7 +262,6 @@ fun FormTitipBeliScreen(navController: NavController) { // NAMA FUNGSI SUDAH DIU
     }
 }
 
-// --- FUNGSI TELAH DIGANTI NAMANYA AGAR TIDAK BENTROK ---
 @Composable
 private fun CustomTextFieldTitipBeli(
     label: String,

@@ -1,15 +1,17 @@
 package com.example.tolongin
 
+import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,23 +37,20 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-// ─── Warna ───────────────────────────────────────────────────────────────────
-val PrimaryBlue      = Color(0xFF2563EB)
-val DarkBlue         = Color(0xFF1D4ED8)
-val NavyDark         = Color(0xFF0D1B3E)
-val NavyMid          = Color(0xFF0F2A5E)
-val BlueMid          = Color(0xFF1A4A8A)
-val BlueLight        = Color(0xFF1E6FB5)
-val TextNavy         = Color(0xFF1E2D5A)
+val PrimaryBlue      = Color(0xFF005AB2)
+val DarkBlue         = Color(0xFF004488)
+val NavyDark         = Color(0xFF111827)
+val NavyMid          = Color(0xFF1F2937)
+val BlueMid          = Color(0xFF1E40AF)
+val BlueLight        = Color(0xFF3B82F6)
+val TextNavy         = Color(0xFF1E2D51)
 val TextMuted        = Color(0xFF4E5A81)
-val TextGray         = Color(0xFF64748B)
-val BgPage           = Color(0xFFF0F4FF)
-val BgChip           = Color(0xFFEEF0FF)
+val TextGray         = Color(0xFF6B7280)
+val BgPage           = Color(0xFFF8FAFC)
+val BgChip           = Color(0xFFEFF6FF)
 val BgCard           = Color(0xFFFFFFFF)
-val BorderLight      = Color(0xFFE8EAF6)
-val PromoTextSub     = Color(0xFFA8C8E8)
+val BorderLight      = Color(0xFFF1F5F9)
 
-// ─── Data Class ───────────────────────────────────────────────────────────────
 data class ServiceItem(val icon: ImageVector, val label: String)
 data class HelperItem(val name: String, val spec: String, val rating: String, val emoji: String)
 data class PromoItemData(val tag: String, val title: String, val desc: String)
@@ -59,10 +59,11 @@ data class PromoItemData(val tag: String, val title: String, val desc: String)
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
 
-    // --- STATE UNTUK NAMA PENGGUNA ---
-    var userName by remember { mutableStateOf("raflijosjis") } // Default sesuai gambar Mas
+    val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+    val alamatGpsAsli = sharedPreferences.getString("ALAMAT_GPS_ASLI", "SUDIRMAN, JAKARTA SELATAN") ?: "SUDIRMAN, JAKARTA SELATAN"
 
-    // --- LOGIKA MENARIK NAMA DARI DATABASE ---
+    var userName by remember { mutableStateOf("raflijosjis") }
+
     LaunchedEffect(Unit) {
         val emailLogin = "raflisgk@gmail.com"
         RetrofitClient.instance.getProfil(emailLogin).enqueue(object : Callback<ProfilResponse> {
@@ -98,63 +99,62 @@ fun HomeScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp) // Disesuaikan dengan tinggi Navbar baru
+                .padding(bottom = 82.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // ── TopBar ────────────────────────────────────────────────────────
-            TopBar()
+            TopBar(alamat = alamatGpsAsli)
 
-            // ── Body ──────────────────────────────────────────────────────────
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                Spacer(Modifier.height(16.dp))
-
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Spacer(Modifier.height(20.dp))
                 Text(
                     text = "Halo, $userName!",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextNavy
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = TextNavy,
+                    letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "Ada yang bisa kami bantu hari ini?",
-                    fontSize = 13.sp,
-                    color = TextMuted,
-                    modifier = Modifier.padding(top = 2.dp)
+                    fontSize = 14.sp,
+                    color = TextMuted
                 )
-
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(24.dp))
 
                 Text(
                     text = "Layanan Kami",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextNavy
+                    color = TextNavy,
+                    letterSpacing = 0.5.sp
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
 
-                // --- TOMBOL LAYANAN (DIPERBAIKI: Sambungan Titip Beli) ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     services.forEach { svc ->
-                        ServiceButton(svc, onClick = {
-                            when (svc.label) {
-                                "Pembersihan" -> navController.navigate("detail_pembersihan")
-                                "Titip Beli"   -> navController.navigate("pemesanan_titip_beli")
-                                "Antar Barang" -> navController.navigate("detail_pengiriman")
+                        ModernHorizontalServiceButton(
+                            svc = svc,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                when (svc.label) {
+                                    "Pembersihan" -> navController.navigate("detail_pembersihan")
+                                    "Titip Beli"   -> navController.navigate("pemesanan_titip_beli")
+                                    "Antar Barang" -> navController.navigate("detail_pengiriman")
+                                }
                             }
-                        })
+                        )
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(28.dp))
             }
 
-            // --- PROMO CAROUSEL ---   
             PromoCarousel()
 
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                Spacer(Modifier.height(24.dp))
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Spacer(Modifier.height(28.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -162,52 +162,49 @@ fun HomeScreen(navController: NavController) {
                 ) {
                     Text(
                         text = "Helper Terpopuler",
-                        fontSize = 17.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextNavy
+                        color = TextNavy,
+                        letterSpacing = 0.5.sp
                     )
                     Text(
                         text = "LIHAT SEMUA",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = DarkBlue,
-                        letterSpacing = 0.8.sp
+                        color = PrimaryBlue,
+                        letterSpacing = 0.5.sp
                     )
                 }
                 Spacer(Modifier.height(14.dp))
             }
 
-            // Helper horizontal scroll
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 helpers.forEach { helper ->
                     HelperCard(helper, onPesanClick = { navController.navigate("pemesanan_titip_beli") })
                 }
             }
-
             Spacer(Modifier.height(32.dp))
         }
 
-        // ── FAB ───────────────────────────────────────────────────────────────
         FloatingActionButton(
             onClick = { },
-            containerColor = PrimaryBlue,
+            containerColor = TextNavy,
             contentColor = Color.White,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 18.dp, bottom = 100.dp)
-                .size(52.dp)
+                .padding(end = 20.dp, bottom = 106.dp)
+                .size(54.dp)
         ) {
-            Icon(Icons.Outlined.Help, contentDescription = "Bantuan", modifier = Modifier.size(28.dp))
+            Icon(Icons.Outlined.HelpOutline, contentDescription = "Bantuan", modifier = Modifier.size(24.dp))
         }
 
-        // ── Bottom Navigation ─────────────────────────────────────────────────
         BottomNavigationBarHome(
             navController = navController,
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -215,28 +212,40 @@ fun HomeScreen(navController: NavController) {
     }
 }
 
-// ─── TopBar ──────────────────────────────────────────────────────────────────
 @Composable
-fun TopBar() {
-    Surface(color = Color.White, shadowElevation = 2.dp) {
+fun TopBar(alamat: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .border(1.dp, BorderLight)
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(text = "Tolong.in", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Tolong.in",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PrimaryBlue,
+                    letterSpacing = (-0.5).sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.LocationOn, null, tint = PrimaryBlue, modifier = Modifier.size(12.dp))
-                    Spacer(Modifier.width(3.dp))
+                    Icon(Icons.Outlined.LocationOn, null, tint = TextGray, modifier = Modifier.size(13.dp))
+                    Spacer(Modifier.width(4.dp))
                     Text(
-                        text = "SUDIRMAN, JAKARTA SELATAN",
+                        text = alamat.uppercase(),
                         fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         color = TextGray,
-                        letterSpacing = 0.4.sp
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -244,28 +253,43 @@ fun TopBar() {
     }
 }
 
-// ─── Service Button ───────────────────────────────────────────────────────────
 @Composable
-fun ServiceButton(svc: ServiceItem, onClick: () -> Unit) {
+fun ModernHorizontalServiceButton(
+    svc: ServiceItem,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
+            .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
             .clickable { onClick() }
-            .padding(4.dp)
+            .padding(vertical = 16.dp, horizontal = 8.dp)
     ) {
         Box(
-            modifier = Modifier.size(60.dp).clip(RoundedCornerShape(16.dp)).background(BgChip),
+            modifier = Modifier
+                .size(52.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(BgChip),
             contentAlignment = Alignment.Center
         ) {
-            Icon(svc.icon, svc.label, tint = DarkBlue, modifier = Modifier.size(26.dp))
+            Icon(svc.icon, svc.label, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
         }
-        Spacer(Modifier.height(6.dp))
-        Text(svc.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = svc.label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextNavy,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
-// ─── Promo Carousel ───────────────────────────────────────────────────────────
 @Composable
 fun PromoCarousel() {
     val promoList = listOf(
@@ -289,70 +313,93 @@ fun PromoCarousel() {
     Column(modifier = Modifier.fillMaxWidth()) {
         LazyRow(
             state = listState,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             items(promoList.size) { index ->
                 val promo = promoList[index]
                 Box(
-                    modifier = Modifier.fillParentMaxWidth().height(150.dp).clip(RoundedCornerShape(20.dp))
-                        .background(Brush.linearGradient(colors = listOf(NavyDark, NavyMid, BlueMid, BlueLight))).padding(22.dp)
+                    modifier = Modifier
+                        .fillParentMaxWidth()
+                        .height(146.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Brush.linearGradient(colors = listOf(NavyDark, NavyMid, BlueMid)))
+                        .padding(20.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxHeight()) {
                         Column {
-                            Box(modifier = Modifier.clip(RoundedCornerShape(50)).background(BlueLight).padding(horizontal = 10.dp, vertical = 3.dp)) {
-                                Text(text = promo.tag, fontSize = 9.sp, color = Color(0xFFE0F0FF), letterSpacing = 0.3.sp)
+                            Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.15f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                                Text(text = promo.tag, fontSize = 9.sp, color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
                             }
-                            Spacer(Modifier.height(6.dp))
-                            Text(text = promo.title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White, lineHeight = 24.sp)
+                            Spacer(Modifier.height(8.dp))
+                            Text(text = promo.title, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, lineHeight = 24.sp)
                         }
-                        Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(10.dp), modifier = Modifier.height(32.dp)) {
-                            Text(text = "Klaim Promo", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = TextNavy)
-                        }
+                        Text(text = promo.desc, fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
                     }
                 }
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
+        // ── FIXED: Sekarang sudah menggunakan Arrangement.Center murni ──
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             repeat(promoList.size) { index ->
                 val isSelected = currentIndex == index
-                Box(modifier = Modifier.padding(horizontal = 3.dp).width(if (isSelected) 20.dp else 6.dp).height(6.dp).clip(RoundedCornerShape(50)).background(if (isSelected) PrimaryBlue else Color(0xFFB0B8D8)))
+                Box(modifier = Modifier.padding(horizontal = 3.dp).width(if (isSelected) 16.dp else 6.dp).height(6.dp).clip(RoundedCornerShape(50)).background(if (isSelected) PrimaryBlue else Color(0xFFCBD5E1)))
             }
         }
     }
 }
 
-// ─── Helper Card ─────────────────────────────────────────────────────────────
 @Composable
 fun HelperCard(helper: HelperItem, onPesanClick: () -> Unit) {
-    Surface(shape = RoundedCornerShape(20.dp), color = BgCard, shadowElevation = 3.dp, modifier = Modifier.width(140.dp)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(14.dp)) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = BgCard,
+        modifier = Modifier
+            .width(145.dp)
+            .border(1.dp, BorderLight, RoundedCornerShape(24.dp))
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(14.dp)
+        ) {
             Box {
-                Box(modifier = Modifier.size(72.dp).clip(RoundedCornerShape(14.dp)).background(BgChip), contentAlignment = Alignment.Center) {
-                    Text(text = helper.emoji, fontSize = 34.sp)
+                Box(modifier = Modifier.size(76.dp).clip(RoundedCornerShape(20.dp)).background(BgChip), contentAlignment = Alignment.Center) {
+                    Text(text = helper.emoji, fontSize = 36.sp)
                 }
-                Surface(shape = RoundedCornerShape(7.dp), color = Color.White, shadowElevation = 3.dp, modifier = Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp)) {
-                    Row(modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Star, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 4.dp, y = 4.dp)
+                        .border(1.dp, BorderLight, RoundedCornerShape(8.dp))
+                ) {
+                    Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(11.dp))
                         Spacer(Modifier.width(2.dp))
-                        Text(text = helper.rating, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = TextNavy)
+                        Text(text = helper.rating, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextNavy)
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Text(text = helper.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextNavy, textAlign = TextAlign.Center)
-            Text(text = helper.spec, fontSize = 9.sp, fontWeight = FontWeight.Medium, color = TextMuted, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(10.dp))
-            Button(onClick = onPesanClick, colors = ButtonDefaults.buttonColors(containerColor = BgChip), shape = RoundedCornerShape(10.dp), modifier = Modifier.height(30.dp)) {
-                Text(text = "Pesan Jasa", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = DarkBlue)
+            Spacer(Modifier.height(12.dp))
+            Text(text = helper.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextNavy, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = helper.spec, fontSize = 10.sp, color = TextGray, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(14.dp))
+            Button(
+                onClick = onPesanClick,
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(32.dp),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text(text = "Pesan", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
 }
 
-// ─── NAVBAR BAWAH (PILL SHAPE & TERHUBUNG SEMUA) ──────────────────────────────────
 @Composable
 fun BottomNavigationBarHome(navController: NavController, modifier: Modifier = Modifier) {
     val navItems = listOf(

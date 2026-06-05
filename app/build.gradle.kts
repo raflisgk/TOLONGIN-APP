@@ -55,6 +55,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // --- JETPACK COMPOSE (Wajib buat daftar.kt) ---
     val composeBom = platform("androidx.compose:compose-bom:2024.02.00") // Pakai versi 2024

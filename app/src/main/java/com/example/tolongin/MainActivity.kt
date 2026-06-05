@@ -17,6 +17,7 @@ import com.example.tolongin.screens.KonfirmasiScreen
 import com.example.tolongin.screens.TrackingScreen
 import com.example.tolongin.viewmodel.PesananViewModel
 import androidx.compose.runtime.LaunchedEffect
+import com.example.tolongin.screens.DaftarPesananScreen
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -75,9 +76,7 @@ class MainActivity : ComponentActivity() {
                             QrisPaymentScreen(navController, "Cleaning Plus", totalHarga, idTransaksi)
                         }
 
-                        // ====================================================================
-                        // KODE BARU: RUTE QRIS MANDIRI UNTUK FITUR TITIP BELI VIA SHAREDPREFS
-                        // ====================================================================
+                        // Rute QRIS Baru (Titip Beli)
                         composable("qris_payment") {
                             QrisPaymentScreen(
                                 navController = navController,
@@ -86,9 +85,15 @@ class MainActivity : ComponentActivity() {
                                 idTransaksi = "TRX-000000"
                             )
                         }
+
+                        // ====================================================================
+                        // FIX: Kata 'composable' sudah dikembalikan ke tempat semula!
+                        // ====================================================================
+                        composable("daftar_pesanan") {
+                            DaftarPesananScreen(navController = navController, viewModel = pesananViewModel)
+                        }
                         // ====================================================================
 
-                        composable("daftar_pesanan") { PesananScreen(navController) }
                         composable("google") { PilihAkunScreen(navController) }
                         composable("daftar") { DaftarScreen(navController) }
                         composable("profil") { ProfileScreen(navController) }
@@ -127,7 +132,6 @@ class MainActivity : ComponentActivity() {
                             TrackingPesananScreen(navController, namaProduk, biayaStr.toIntOrNull() ?: 0)
                         }
 
-                        // --- RUTE MVVM LOGISTIK BARU ---
                         composable("detail_pengiriman") {
                             DetailPengirimanScreen(
                                 viewModel = pesananViewModel,

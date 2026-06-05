@@ -74,10 +74,22 @@ interface ApiService {
         @Field("total_harga") totalHarga: String
     ): Call<ResponseModel>
 
-    // AMBIL DATA PESANAN (MENGGUNAKAN pesananmodel HURUF KECIL SESUAI OPSIA)
+    // AMBIL DATA PESANAN (FIXED: Tanda kurung parameter sudah ditutup dengan benar)
     @FormUrlEncoded
     @POST("tolongin_api/get_pesanan.php")
     fun getPesanan(
         @Field("email") email: String
-    ): Call<List<pesananmodel>>
+    ): Call<List<PesananModel>>
 }
+
+// ====================================================================
+// MODEL ASLI: Ditempatkan di luar interface & Sesuai Kolom Database MySQL
+// ====================================================================
+data class PesananModel(
+    val id_transaksi: String = "",
+    val email: String = "",
+    val nama_layanan: String = "",
+    val tanggal: String = "",
+    val status: String = "",
+    val total_harga: String = ""
+)

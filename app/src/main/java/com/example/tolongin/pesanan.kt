@@ -1,262 +1,280 @@
-package com.example.tolongin
+package com.example.tolongin.screens
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.google.gson.annotations.SerializedName
+import com.example.tolongin.PesananModel
+import com.example.tolongin.PrimaryBlue
+import com.example.tolongin.RetrofitClient
+import com.example.tolongin.viewmodel.PesananViewModel
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-// MODEL DATA STRUKTUR UTAMA
-data class pesananmodel(
-    @SerializedName("id_transaksi") val idTransaksi: String,
-    @SerializedName("email") val email: String,
-    @SerializedName("nama_layanan") val namaLayanan: String,
-    @SerializedName("tanggal") val tanggal: String,
-    @SerializedName("status") val status: String,
-    @SerializedName("total_harga") val totalHarga: String
-)
-
 @Composable
-fun PesananScreen(navController: NavController) {
+fun DaftarPesananScreen(
+    navController: NavController,
+    viewModel: PesananViewModel
+) {
     val context = LocalContext.current
+    val isPreview = LocalInspectionMode.current
 
-    val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
-    val emailLogin = sharedPreferences.getString("USER_EMAIL", "user@gmail.com") ?: "user@gmail.com"
-
-    var selectedTab by remember { mutableStateOf(0) }
+    var listPesananDb by remember { mutableStateOf<List<PesananModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var pesananList by remember { mutableStateOf(listOf<pesananmodel>()) }
+    var selectedTab by remember { mutableStateOf(0) }
 
-    LaunchedEffect(selectedTab) {
-        isLoading = true
-        RetrofitClient.instance.getPesanan(emailLogin).enqueue(object : Callback<List<pesananmodel>> {
-            override fun onResponse(call: Call<List<pesananmodel>>, response: Response<List<pesananmodel>>) {
-                isLoading = false
-                if (response.isSuccessful) {
-                    val allPesanan = response.body() ?: emptyList()
-                    pesananList = if (selectedTab == 0) {
-                        allPesanan.filter { it.status != "Selesai" }
-                    } else {
-                        allPesanan.filter { it.status == "Selesai" }
+    val bgPage = Color(0xFFF8FAFC)
+    val textDark = Color(0xFF212D51)
+    val textMid = Color(0xFF4E5A81)
+
+    LaunchedEffect(Unit) {
+        if (isPreview) {
+            listPesananDb = listOf(
+                PesananModel("TRX-260882", "raflisgk@gmail.com", "Titip Beli (Kopi Susu)", "Hari ini, Segera", "Lunas", "Rp 16.000"),
+                PesananModel("TRX-886929", "raflisgk@gmail.com", "Titip Barang (Paket Kecil)", "Sekarang (Langsung Jemput)", "Lunas", "Rp 18.000"),
+                PesananModel("TRX-933710", "raflisgk@gmail.com", "Titip Barang (Barang Besar)", "Sekarang (Langsung Jemput)", "Lunas", "Rp 18.000")
+            )
+            isLoading = false
+        } else {
+            val emailLogin = "raflisgk@gmail.com"
+            RetrofitClient.instance.getPesanan(emailLogin).enqueue(object : Callback<List<PesananModel>> {
+                override fun onResponse(call: Call<List<PesananModel>>, response: Response<List<PesananModel>>) {
+                    isLoading = false
+                    if (response.isSuccessful && response.body() != null) {
+                        listPesananDb = response.body()!!
                     }
                 }
-            }
-
-            override fun onFailure(call: Call<List<pesananmodel>>, t: Throwable) {
-                isLoading = false
-                Toast.makeText(context, "Gagal memuat data: ${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
+                override fun onFailure(call: Call<List<PesananModel>>, t: Throwable) {
+                    isLoading = false
+                    Toast.makeText(context, "Gagal memuat database: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
     }
 
-    Scaffold(
-        bottomBar = { BottomNavigationBarPesanan(navController = navController) },
-        containerColor = Color.White
-    ) { innerPadding ->
+    Box(modifier = Modifier.fillMaxSize().background(bgPage)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
+                .padding(top = 40.dp, start = 24.dp, end = 24.dp, bottom = 90.dp)
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
             Text(
                 text = "Pesanan Saya",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E2D5A)
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = textDark,
+                letterSpacing = (-0.5).sp
             )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Kelola layanan pilihan Anda",
-                fontSize = 16.sp,
-                color = Color(0xFF4E5A81)
+                fontSize = 14.sp,
+                color = textMid
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Toggle Tab
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(50.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFEFF0FF))
+                    .background(Color(0xFFEEF2F6))
                     .padding(4.dp)
             ) {
-                TabButton(
-                    text = "Mendatang",
-                    isSelected = selectedTab == 0,
-                    modifier = Modifier.weight(1f)
-                ) { selectedTab = 0 }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (selectedTab == 0) Color.White else Color.Transparent)
+                        .clickable { selectedTab = 0 }
+                ) {
+                    Text("Mendatang", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (selectedTab == 0) PrimaryBlue else textMid)
+                }
 
-                TabButton(
-                    text = "Riwayat",
-                    isSelected = selectedTab == 1,
-                    modifier = Modifier.weight(1f)
-                ) { selectedTab = 1 }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (selectedTab == 1) Color.White else Color.Transparent)
+                        .clickable { selectedTab = 1 }
+                ) {
+                    Text("Riwayat", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (selectedTab == 1) PrimaryBlue else textMid)
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF2563EB))
-                }
-            } else if (pesananList.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Inbox,
-                            contentDescription = "Kosong",
-                            tint = Color.LightGray,
-                            modifier = Modifier.size(80.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Belum ada pesanan di sini",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4E5A81)
-                        )
-                        Text(
-                            text = "Yuk, buat pesanan pertamamu sekarang!",
-                            fontSize = 14.sp,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
+                Box(modifier = Modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PrimaryBlue)
                 }
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    modifier = Modifier.fillMaxSize().weight(1f)
-                ) {
-                    items(pesananList) { itemPesanan ->
-                        CardPesanan(itemPesanan)
+                if (selectedTab == 0) {
+                    if (listPesananDb.isNotEmpty()) {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(listPesananDb) { item ->
+                                ActiveOrderCard(
+                                    title = item.nama_layanan,
+                                    status = item.status,
+                                    date = item.tanggal,
+                                    price = item.total_harga,
+                                    orderId = item.id_transaksi,
+                                    onClick = {
+                                        // ─── LOGIKA NAVIGASI CLIK DATA DATABASE ───
+                                        if (item.nama_layanan.contains("Barang") || item.nama_layanan.contains("Paket")) {
+                                            // Ke Tracking Logistik (MVVM)
+                                            navController.navigate("tracking_mvvm")
+                                        } else if (item.nama_layanan.contains("Titip Beli")) {
+                                            // Trik Pilihan ke-2: Kunci nama layanan ke cache HP sebelum pindah screen
+                                            val sharedPref = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                                            with(sharedPref.edit()) {
+                                                putString("PREF_NAMA_PRODUK", item.nama_layanan)
+                                                putString("PREF_CATATAN", "Pembelian Terkonfirmasi")
+                                                putString("PREF_ALAMAT_TUJUAN", "Jl. Raya Rungkut No. 4, Surabaya")
+                                                apply()
+                                            }
+
+                                            // Ambil angka total harga saja untuk dioper ke rute bawaan Anda
+                                            val hargaAngka = item.total_harga.filter { it.isDigit() }.toIntOrNull() ?: 70000
+                                            val safeNama = android.net.Uri.encode(item.nama_layanan)
+
+                                            // Pindah ke layar TrackingPesananScreen Anda
+                                            navController.navigate("tracking/$safeNama/$hargaAngka")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Belum ada pesanan aktif.", color = textMid, fontSize = 14.sp)
+                        }
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Belum ada riwayat transaksi.", color = textMid, fontSize = 14.sp)
                     }
                 }
             }
         }
-    }
-}
 
-@Composable
-fun TabButton(text: String, isSelected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) Color.White else Color.Transparent)
-            .clickable { onClick() }
-            .then(if (isSelected) Modifier.shadow(2.dp, RoundedCornerShape(12.dp)) else Modifier),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (isSelected) Color(0xFF2563EB) else Color(0xFF64748B),
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
+        BottomNavigationBarOrders(
+            navController = navController,
+            modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
 }
 
 @Composable
-fun CardPesanan(pesanan: pesananmodel) {
-    Surface(
+fun ActiveOrderCard(
+    title: String,
+    status: String,
+    date: String,
+    price: String,
+    orderId: String,
+    onClick: () -> Unit
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(24.dp))
+            .clickable { onClick() }
+            .padding(20.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF212D51))
+                Text(text = orderId, fontSize = 11.sp, color = Color(0xFF6B7280), fontWeight = FontWeight.Medium)
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(PrimaryBlue.copy(alpha = 0.1f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
-                Text(
-                    text = pesanan.idTransaksi,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFEEF6FF))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(text = pesanan.status, color = Color(0xFF2563EB), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
+                Text(text = status, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+        HorizontalDivider(color = Color(0xFFF1F5F9))
+        Spacer(modifier = Modifier.height(14.dp))
 
-            Text(text = pesanan.namaLayanan, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E2D5A))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(text = "📅", fontSize = 14.sp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = date,
+                fontSize = 13.sp,
+                color = Color(0xFF4E5A81),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.CalendarToday, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = pesanan.tanggal, fontSize = 14.sp, color = Color.Gray)
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                Text(text = "TOTAL PEMBAYARAN", fontSize = 9.sp, color = Color(0xFF6B7280), fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+                Text(text = price, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = PrimaryBlue)
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF3F4F6))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "Total Pembayaran", fontSize = 12.sp, color = Color.Gray)
-                Text(text = pesanan.totalHarga, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
-            }
+            Text(text = "Lihat Detail ›", fontSize = 12.sp, color = PrimaryBlue, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier = Modifier) {
+fun BottomNavigationBarOrders(navController: NavController, modifier: Modifier = Modifier) {
     val navItems = listOf(
-        Icons.Outlined.Home to "HOME",
-        Icons.Filled.ListAlt to "ORDERS",
+        Icons.Filled.Home to "HOME",
+        Icons.Outlined.ListAlt to "ORDERS",
         Icons.Outlined.ChatBubbleOutline to "MESSAGES",
         Icons.Outlined.Person to "PROFILE"
     )
@@ -268,16 +286,14 @@ fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier 
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             navItems.forEach { (icon, label) ->
                 val active = label == "ORDERS"
                 val bgColor = if (active) Color(0xFFF0F5FF) else Color.Transparent
-                val contentColor = if (active) Color(0xFF2563EB) else Color(0xFF94A3B8)
+                val contentColor = if (active) PrimaryBlue else Color(0xFF94A3B8)
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -286,52 +302,19 @@ fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier 
                         .clip(RoundedCornerShape(20.dp))
                         .background(bgColor)
                         .clickable {
+                            if (active) return@clickable
                             when (label) {
-                                "HOME" -> {
-                                    if (active) return@clickable
-                                    navController.navigate("beranda") {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                                "ORDERS" -> {
-                                    if (active) return@clickable
-                                }
-                                "MESSAGES" -> {
-                                    if (active) return@clickable
-                                    navController.navigate("pesan") {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                                "PROFILE" -> {
-                                    if (active) return@clickable
-                                    navController.navigate("profil") {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
+                                "HOME"     -> navController.navigate("beranda") { popUpTo(navController.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
+                                "ORDERS"   -> navController.navigate("daftar_pesanan") { popUpTo(navController.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
+                                "MESSAGES" -> navController.navigate("pesan") { popUpTo(navController.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
+                                "PROFILE"  -> navController.navigate("profil") { popUpTo(navController.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
                             }
                         }
                         .padding(horizontal = 22.dp, vertical = 12.dp)
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = label,
-                        tint = contentColor,
-                        modifier = Modifier.size(26.dp)
-                    )
+                    Icon(imageVector = icon, contentDescription = label, tint = contentColor, modifier = Modifier.size(26.dp))
                     Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = label,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp,
-                        color = contentColor
-                    )
+                    Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = contentColor)
                 }
             }
         }
@@ -340,8 +323,9 @@ fun BottomNavigationBarPesanan(navController: NavController, modifier: Modifier 
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-fun PesananPreview() {
-    MaterialTheme {
-        PesananScreen(navController = rememberNavController())
-    }
+fun DaftarPesananScreenPreview() {
+    DaftarPesananScreen(
+        navController = rememberNavController(),
+        viewModel = PesananViewModel()
+    )
 }

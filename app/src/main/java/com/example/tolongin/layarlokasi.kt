@@ -1,5 +1,12 @@
 package com.example.tolongin
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,16 +14,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -24,12 +31,42 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LayarLokasi(
     onAllowClick: () -> Unit,
     onSkipClick: () -> Unit
 ) {
+    // ── LOGIKA INTEGRASI GPS ASLI ─────────────────────────────────────
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Launcher untuk menghandle pop-up izin GPS bawaan Android
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+        if (fineGranted || coarseGranted) {
+            // Jika user klik 'Allow', lacak jalan aslinya
+            ambilGpsAlamatNyata(context, fusedLocationClient) {
+                isLoading = false
+                onAllowClick()
+            }
+        } else {
+            isLoading = false
+            Toast.makeText(context, "Izin ditolak. Menggunakan lokasi default.", Toast.LENGTH_SHORT).show()
+            onAllowClick()
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -55,8 +92,7 @@ fun LayarLokasi(
 
             // --- Ilustrasi Kartu Lokasi ---
             Box(
-                modifier = Modifier
-                    .size(280.dp),
+                modifier = Modifier.size(280.dp),
                 contentAlignment = Alignment.Center
             ) {
                 // Kartu belakang (biru muda)
@@ -77,9 +113,8 @@ fun LayarLokasi(
                     color = Color.White
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        // Icon Pin Lokasi
                         Image(
-                            painter = painterResource(id = R.drawable.ic_sparkle), // Ganti ke ic_location jika ada
+                            painter = painterResource(id = R.drawable.ic_sparkle),
                             contentDescription = "Location Icon",
                             colorFilter = ColorFilter.tint(Color(0xff005ab2)),
                             modifier = Modifier.size(80.dp)
@@ -132,7 +167,7 @@ fun LayarLokasi(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_sparkle), // Ganti ke ic_shield
+                    painter = painterResource(id = R.drawable.ic_sparkle),
                     contentDescription = null,
                     colorFilter = ColorFilter.tint(Color(0xff005ab2)),
                     modifier = Modifier.size(24.dp)
@@ -146,16 +181,38 @@ fun LayarLokasi(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Tombol Aksi ---
+            // --- Tombol Akses Lokasi Otomatis ---
             Button(
-                onClick = { onAllowClick() },
+                onClick = {
+                    isLoading = true
+                    val fineCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    val coarseCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+                    if (fineCheck || coarseCheck) {
+                        // Jika dari awal sudah diizinkan, langsung tembak ambil alamat nyata
+                        ambilGpsAlamatNyata(context, fusedLocationClient) {
+                            isLoading = false
+                            onAllowClick()
+                        }
+                    } else {
+                        // Jika belum diizinkan, panggil launcher pop-up izin Android
+                        permissionLauncher.launch(
+                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        )
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xff005ab2))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xff005ab2)),
+                enabled = !isLoading
             ) {
-                Text("Izinkan Akses", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Izinkan Akses", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
 
             Text(
@@ -173,6 +230,36 @@ fun LayarLokasi(
 
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+}
+
+// ── FUNGSI STANDAR: MERUBAH KOORDINAT MENJADI ALAMAT NYATA JALANAN ──
+private fun ambilGpsAlamatNyata(
+    context: Context,
+    fusedLocationClient: com.google.android.gms.location.FusedLocationProviderClient,
+    onComplete: () -> Unit
+) {
+    try {
+        fusedLocationClient.lastLocation.addOnSuccessListener { lokasi ->
+            if (lokasi != null) {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                // Ambil 1 baris hasil alamat terdekat dari koordinat GPS
+                val hasilAlamat = geocoder.getFromLocation(lokasi.latitude, lokasi.longitude, 1)
+
+                if (!hasilAlamat.isNullOrEmpty()) {
+                    val alamatLengkapJalan = hasilAlamat[0].getAddressLine(0)
+
+                    // Simpan alamat asli ke SharedPreferences agar bisa diambil oleh file mana pun
+                    val sharedPref = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                    sharedPref.edit().putString("ALAMAT_GPS_ASLI", alamatLengkapJalan).apply()
+                }
+            }
+            onComplete()
+        }.addOnFailureListener {
+            onComplete()
+        }
+    } catch (e: SecurityException) {
+        onComplete()
     }
 }
 
