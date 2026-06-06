@@ -1,5 +1,6 @@
 package com.example.tolongin
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -39,8 +40,6 @@ fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    // State untuk mata password
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
@@ -52,7 +51,6 @@ fun LoginScreen(navController: NavController) {
     ) {
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Logo Atas (Sparkle)
         Box(
             modifier = Modifier
                 .size(80.dp)
@@ -124,18 +122,13 @@ fun LoginScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 leadingIcon = { Icon(Icons.Default.Lock, null, tint = Color(0xFF4E5A81)) },
-
-                // Logika tombol mata ditekan
                 trailingIcon = {
                     val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(imageVector = image, contentDescription = "Toggle Password", tint = Color(0xFF4E5A81))
                     }
                 },
-
-                // Logika menyembunyikan/menampilkan teks
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color(0xFFEEF2FF),
                     unfocusedContainerColor = Color(0xFFEEF2FF),
@@ -147,33 +140,43 @@ fun LoginScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // --- TOMBOL MASUK (DENGAN CEK DATABASE) ---
+        // --- TOMBOL MASUK DENGAN VALIDASI ROLE DINAMIS LARAGON ---
         Button(
             onClick = {
-                if (email.isEmpty() || password.isEmpty()) {
+                val emailBersih = email.lowercase().trim() // Amankan dari spasi & huruf besar otomatis HP
+                val pwBersih = password.trim()
+
+                if (emailBersih.isEmpty() || pwBersih.isEmpty()) {
                     Toast.makeText(context, "Email dan Password harus diisi!", Toast.LENGTH_SHORT).show()
                 } else {
-                    // Manggil loginUser dari RetrofitClient
-                    RetrofitClient.instance.loginUser(email, password).enqueue(object : Callback<ResponseModel> {
+                    // Semua akun sekarang langsung menembak ke database MySQL Laragon Anda
+                    RetrofitClient.instance.loginUser(emailBersih, pwBersih).enqueue(object : Callback<ResponseModel> {
                         override fun onResponse(call: Call<ResponseModel>, response: Response<ResponseModel>) {
                             if (response.isSuccessful) {
                                 val res = response.body()
                                 if (res?.status == "success") {
-                                    Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+
+                                    // Simpan sesi email ke memori HP
+                                    val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                                    sharedPreferences.edit().putString("USER_EMAIL", emailBersih).apply()
 
                                     // ====================================================================
-                                    // TAMBAHAN LANGKAH 1: SIMPAN EMAIL KE MEMORI HP
+                                    // PERBAIKAN: SELEKSI ROLE OTOMATIS BERDASARKAN HASIL DATA BASE
                                     // ====================================================================
-                                    val sharedPreferences = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
-                                    sharedPreferences.edit().putString("USER_EMAIL", email).apply()
-                                    // ====================================================================
-
-                                    // PINDAH KE LAYAR LOKASI
-                                    navController.navigate("layarlokasi") {
-                                        popUpTo("login") { inclusive = true }
+                                    if (res.role == "helper") {
+                                        Toast.makeText(context, "Selamat datang Helper!", Toast.LENGTH_SHORT).show()
+                                        navController.navigate("beranda_helper") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                        navController.navigate("layarlokasi") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
                                     }
+                                    // ====================================================================
+
                                 } else {
-                                    // Muncul jika email/password salah
                                     Toast.makeText(context, res?.message ?: "Gagal Masuk", Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -194,7 +197,6 @@ fun LoginScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Divider
         Row(verticalAlignment = Alignment.CenterVertically) {
             HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFEEEEEE))
             Text("  ATAU LANJUT DENGAN  ", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
@@ -203,7 +205,6 @@ fun LoginScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Tombol Google
         Surface(
             modifier = Modifier
                 .fillMaxWidth()

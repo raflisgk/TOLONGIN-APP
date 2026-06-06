@@ -1,5 +1,7 @@
 package com.example.tolongin.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,14 +16,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.example.tolongin.PesananModel
+import com.example.tolongin.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-// ── Warna ─────────────────────────────────────────────────────────────────
+// ── Warna Bawaan Anda ────────────────────────────────────────────────────────
 private val DPrimary    = Color(0xFF1A4FAE)
 private val DPrimaryDark= Color(0xFF0D3585)
 private val DBgPage     = Color(0xFFFFFFFF)
@@ -32,46 +43,51 @@ private val DTextLight  = Color(0xFF9CA3AF)
 private val DBorderCol  = Color(0xFFE5E7EB)
 private val DBadgeBg    = Color(0xFFF3F4F6)
 
-data class PesananItem(
-    val kategori: String,
-    val harga: String,
-    val judul: String,
-    val deskripsi: String,
-    val jarak: String,
-    val waktu: String
-)
-
 @Composable
-fun DaftarPesananScreen() {
+fun DaftarPesananScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    val isPreview = LocalInspectionMode.current
+
     var tabAktif by remember { mutableStateOf("Tersedia") }
     val tabList = listOf("Tersedia", "Berjalan", "Selesai")
 
-    val pesananList = listOf(
-        PesananItem(
-            kategori = "Kebersihan",
-            harga = "Rp 50.000",
-            judul = "Bersihkan Halaman Rumah",
-            deskripsi = "Membutuhkan bantuan untuk menyapu daun kering dan merapikan pot...",
-            jarak = "1.2 km",
-            waktu = "Hari ini, 14:00"
-        ),
-        PesananItem(
-            kategori = "Kurir",
-            harga = "Rp 35.000",
-            judul = "Ambil Paket Dokumen",
-            deskripsi = "Tolong ambilkan dokumen dari kantor cabang dan antarkan ke rumah sakit...",
-            jarak = "3.5 km",
-            waktu = "Segera"
-        ),
-        PesananItem(
-            kategori = "Perbaikan",
-            harga = "Rp 150.000",
-            judul = "Perbaiki Pipa Bocor",
-            deskripsi = "Pipa wastafel dapur bocor, butuh tukang ledeng segera untuk...",
-            jarak = "0.8 km",
-            waktu = "Besok, 09:00"
-        )
-    )
+    // State penampung data dari database Laragon
+    var listPesananDb by remember { mutableStateOf<List<PesananModel>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // ── KONEKSI DATABASE VIA RETROFIT ──
+    LaunchedEffect(Unit) {
+        if (isPreview) {
+            listPesananDb = listOf(
+                PesananModel("TRX-260882", "raflisgk@gmail.com", "Titip Beli (kue)", "Hari ini, Segera", "Mencari Helper", "Rp 31.000"),
+                PesananModel("TRX-441122", "raflisgk@gmail.com", "Titip Barang (Paket Kecil)", "Sekarang", "Mencari Helper", "Rp 13.000")
+            )
+            isLoading = false
+        } else {
+            RetrofitClient.instance.getPesanan("raflisgk@gmail.com").enqueue(object : Callback<List<PesananModel>> {
+                override fun onResponse(call: Call<List<PesananModel>>, response: Response<List<PesananModel>>) {
+                    isLoading = false
+                    if (response.isSuccessful && response.body() != null) {
+                        listPesananDb = response.body()!!
+                    }
+                }
+                override fun onFailure(call: Call<List<PesananModel>>, t: Throwable) {
+                    isLoading = false
+                    Toast.makeText(context, "Gagal terhubung ke Laragon: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+    }
+
+    // ── FILTER DATA BERDASARKAN STATUS TAB ──
+    val pesananTerfilter = listPesananDb.filter { item ->
+        when (tabAktif) {
+            "Tersedia" -> item.status.contains("Mencari", ignoreCase = true) || item.status.contains("Lunas", ignoreCase = true)
+            "Berjalan" -> item.status.contains("Progres", ignoreCase = true) || item.status.contains("Jalan", ignoreCase = true)
+            "Selesai"  -> item.status.contains("Selesai", ignoreCase = true)
+            else       -> true
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -95,7 +111,6 @@ fun DaftarPesananScreen() {
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                         .statusBarsPadding()
                 ) {
-                    // Logo kiri
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -103,18 +118,15 @@ fun DaftarPesananScreen() {
                             .clip(RoundedCornerShape(8.dp))
                             .background(DPrimary)
                     ) {
-                        Text("T", color = Color.White,
-                            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.ExtraBold))
+                        Text("T", color = Color.White, style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.ExtraBold))
                     }
 
-                    // Judul tengah
                     Text(
                         "Tolong.in",
                         color = DPrimary,
                         style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                     )
 
-                    // Bell kanan
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -149,7 +161,7 @@ fun DaftarPesananScreen() {
                 }
             }
 
-            // ── TAB ───────────────────────────────────────────────────────
+            // ── TAB TOGGLE ────────────────────────────────────────────────
             item {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
@@ -182,28 +194,58 @@ fun DaftarPesananScreen() {
                 }
             }
 
-            // ── DAFTAR PESANAN ────────────────────────────────────────────
-            items(pesananList.size) { index ->
-                val item = pesananList[index]
-                PesananCardItem(
-                    item = item,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
+            // ── LIST DATA PESANAN DARI DATABASE VIA RETROFIT ──────────────
+            if (isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = DPrimary)
+                    }
+                }
+            } else if (pesananTerfilter.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                        Text("Tidak ada pesanan kategori ini.", color = DTextMid, fontSize = 14.sp)
+                    }
+                }
+            } else {
+                items(pesananTerfilter.size) { index ->
+                    val item = pesananTerfilter[index]
+
+                    PesananCardItem(
+                        item = item,
+                        tabAktif = tabAktif, // <-- Kirim data tab aktif ke card
+                        onCardClick = {
+                            navController.navigate("detail_pesanan_mitra/${item.id_transaksi}")
+                        },
+                        onAksiClick = {
+                            if (tabAktif == "Tersedia") {
+                                // Ambil Pesanan -> Ubah status jadi Progres
+                                listPesananDb = listPesananDb.map { order ->
+                                    if (order.id_transaksi == item.id_transaksi) order.copy(status = "Progres") else order
+                                }
+                                Toast.makeText(context, "Pesanan diambil! Masuk ke tab Berjalan.", Toast.LENGTH_SHORT).show()
+                            } else if (tabAktif == "Berjalan") {
+                                // Selesaikan Pesanan -> Ubah status jadi Selesai
+                                listPesananDb = listPesananDb.map { order ->
+                                    if (order.id_transaksi == item.id_transaksi) order.copy(status = "Selesai") else order
+                                }
+                                Toast.makeText(context, "Selamat! Pesanan telah selesai dikerjakan 🎉", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    )
+                }
             }
 
             item { Spacer(Modifier.height(8.dp)) }
         }
 
-        // ── BOTTOM NAV ────────────────────────────────────────────────────
+        // ── BOTTOM NAV NAVIGATION BAR ──────────────────────────────────────
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .shadow(
-                    16.dp,
-                    RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    spotColor = Color(0xFF3A5A9E).copy(alpha = 0.08f)
-                )
+                .shadow(16.dp, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp), spotColor = Color(0xFF3A5A9E).copy(alpha = 0.08f))
                 .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                 .background(Color.White)
                 .navigationBarsPadding()
@@ -213,10 +255,15 @@ fun DaftarPesananScreen() {
                 horizontalArrangement = Arrangement.SpaceAround,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                DNavItem(icon = "🏠", label = "Beranda", aktif = false)
-                DNavItem(icon = "📋", label = "Pesanan", aktif = true)
-                DNavItem(icon = "📊", label = "Laporan", aktif = false)
-                DNavItem(icon = "👤", label = "Profil", aktif = false)
+                DNavItem(icon = "🏠", label = "Beranda", aktif = false, onClick = {
+                    navController.navigate("beranda_helper") {
+                        popUpTo("beranda_helper") { saveState = true }
+                        launchSingleTop = true
+                    }
+                })
+                DNavItem(icon = "📋", label = "Pesanan", aktif = true, onClick = {})
+                DNavItem(icon = "📊", label = "Laporan", aktif = false, onClick = {})
+                DNavItem(icon = "👤", label = "Profil", aktif = false, onClick = {})
             }
         }
     }
@@ -224,31 +271,63 @@ fun DaftarPesananScreen() {
 
 @Composable
 private fun PesananCardItem(
-    item: PesananItem,
+    item: PesananModel,
+    tabAktif: String,
+    onCardClick: () -> Unit,
+    onAksiClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val kategoriTampil = if (item.nama_layanan.contains("Clean", ignoreCase = true) || item.nama_layanan.contains("Bersih", ignoreCase = true)) "Kebersihan"
+    else if (item.nama_layanan.contains("Beli", ignoreCase = true) || item.nama_layanan.contains("Titip", ignoreCase = true)) "Kurir"
+    else "Perbaikan"
+
+    val badgeIcon = when (kategoriTampil) {
+        "Kebersihan" -> "🧹"
+        "Kurir"      -> "🚚"
+        else         -> "📦"
+    }
+
+    val deskripsiDummy = "Menerima layanan ${item.nama_layanan} terkonfirmasi resmi dari sistem aplikasi pelanggan Tolong.in."
+
+    // ====================================================================
+    // 📊 LOGIKA STRUKTUR BUTTON DINAMIS BERDASARKAN POSISI TAB MAS
+    // ====================================================================
+    val teksTombol = when (tabAktif) {
+        "Tersedia" -> "Ambil Pesanan"
+        "Berjalan" -> "Selesaikan Pesanan"
+        else       -> "Pesanan Selesai"
+    }
+
+    val ikonTombol = when (tabAktif) {
+        "Tersedia" -> "✋"
+        "Berjalan" -> "✅"
+        else       -> "🎉"
+    }
+
+    val warnaTombol = when (tabAktif) {
+        "Tersedia" -> DPrimaryDark // Biru gelap bawaan mas
+        "Berjalan" -> Color(0xFF10B981) // Hijau sukses premium
+        else       -> Color(0xFF9CA3AF) // Abu-abu terkunci
+    }
+
+    val tombolBisaDiklik = tabAktif != "Selesai"
+    // ====================================================================
+
     Column(
         verticalArrangement = Arrangement.spacedBy(0.dp),
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                8.dp,
-                RoundedCornerShape(20.dp),
-                spotColor = Color(0xFF3A5A9E).copy(alpha = 0.07f)
-            )
+            .shadow(8.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF3A5A9E).copy(alpha = 0.07f))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
+            .clickable { onCardClick() }
             .padding(20.dp)
     ) {
-        // ── Baris 1: Badge + Harga
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 10.dp)
+            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
         ) {
-            // Badge kategori
             Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -258,119 +337,59 @@ private fun PesananCardItem(
                     .border(1.dp, DBorderCol, RoundedCornerShape(9999.dp))
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
-                // icon sesuai kategori
-                val badgeIcon = when (item.kategori) {
-                    "Kebersihan" -> "🧹"
-                    "Kurir"      -> "🚚"
-                    "Perbaikan"  -> "🔧"
-                    else         -> "📦"
-                }
                 Text(badgeIcon, style = TextStyle(fontSize = 11.sp))
-                Text(
-                    item.kategori,
-                    color = DTextMid,
-                    style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                )
+                Text(kategoriTampil, color = DTextMid, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium))
             }
 
-            // Harga
-            Text(
-                item.harga,
-                color = DPrimary,
-                style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-            )
+            Text(item.total_harga, color = DPrimary, style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.ExtraBold))
         }
 
-        // ── Judul
-        Text(
-            item.judul,
-            color = DTextDark,
-            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold),
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
+        Text(item.nama_layanan, color = DTextDark, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold), modifier = Modifier.padding(bottom = 6.dp))
+        Text(deskripsiDummy, color = DTextMid, lineHeight = 1.5.em, style = TextStyle(fontSize = 13.sp), modifier = Modifier.padding(bottom = 14.dp))
 
-        // ── Deskripsi
-        Text(
-            item.deskripsi,
-            color = DTextMid,
-            lineHeight = 1.5.em,
-            style = TextStyle(fontSize = 13.sp),
-            modifier = Modifier.padding(bottom = 14.dp)
-        )
+        HorizontalDivider(color = DBorderCol, modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp))
 
-        // ── Divider
-        HorizontalDivider(
-            color = DBorderCol,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 14.dp)
-        )
-
-        // ── Jarak + Waktu
         Row(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("📍", style = TextStyle(fontSize = 12.sp))
-                Text(
-                    item.jarak,
-                    color = DTextMid,
-                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                )
+                Text("1.2 km dari Anda", color = DTextMid, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium))
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("🕐", style = TextStyle(fontSize = 12.sp))
-                Text(
-                    item.waktu,
-                    color = DTextMid,
-                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                )
+                Text(item.tanggal, color = DTextMid, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium))
             }
         }
 
-        // ── Tombol Ambil Pesanan
+        // Area Render Tombol Pintar Multi-Fungsi
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .background(DPrimaryDark)
-                .clickable {}
+                .background(warnaTombol)
+                .clickable(enabled = tombolBisaDiklik) { onAksiClick() }
                 .padding(vertical = 14.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("✋", style = TextStyle(fontSize = 16.sp))
-                Text(
-                    "Ambil Pesanan",
-                    color = Color.White,
-                    style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(ikonTombol, style = TextStyle(fontSize = 16.sp))
+                Text(teksTombol, color = Color.White, style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold))
             }
         }
     }
 }
 
 @Composable
-private fun DNavItem(icon: String, label: String, aktif: Boolean) {
+private fun DNavItem(icon: String, label: String, aktif: Boolean, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .clickable {}
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Box(
@@ -382,19 +401,12 @@ private fun DNavItem(icon: String, label: String, aktif: Boolean) {
         ) {
             Text(icon, style = TextStyle(fontSize = 20.sp))
         }
-        Text(
-            label,
-            color = if (aktif) DPrimary else DTextLight,
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = if (aktif) FontWeight.SemiBold else FontWeight.Normal
-            )
-        )
+        Text(label, color = if (aktif) DPrimary else DTextLight, style = TextStyle(fontSize = 11.sp, fontWeight = if (aktif) FontWeight.SemiBold else FontWeight.Normal))
     }
 }
 
 @Preview(widthDp = 390, heightDp = 844)
 @Composable
 fun DaftarPesananPreview() {
-    DaftarPesananScreen()
+    DaftarPesananScreen(navController = rememberNavController())
 }

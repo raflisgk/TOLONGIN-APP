@@ -18,6 +18,7 @@ import com.example.tolongin.screens.TrackingScreen
 import com.example.tolongin.viewmodel.PesananViewModel
 import androidx.compose.runtime.LaunchedEffect
 import com.example.tolongin.screens.DaftarPesananScreen
+import com.example.tolongin.screens.BerandaMitraScreen
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -49,7 +50,15 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("login") { LoginScreen(navController) }
+
+                        // ── BERANDA USER BIASA ──
                         composable("beranda") { HomeScreen(navController) }
+
+                        // ── BERANDA MITRA / HELPER ──
+                        composable("beranda_helper") {
+                            BerandaMitraScreen(navController = navController)
+                        }
+
                         composable("detail_pembersihan") { PembersihanScreen(navController) }
 
                         composable("pemesanan/{namaLayanan}/{hargaLayanan}") { backStackEntry ->
@@ -86,13 +95,15 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // ====================================================================
-                        // FIX: Kata 'composable' sudah dikembalikan ke tempat semula!
-                        // ====================================================================
+                        // RUTE TRANSAKSI SAYA (MILIK USER)
                         composable("daftar_pesanan") {
                             DaftarPesananScreen(navController = navController, viewModel = pesananViewModel)
                         }
-                        // ====================================================================
+
+                        // RUTE DAFTAR PESANAN MASUK (MILIK MITRA / HELPER)
+                        composable("daftar_pesanan_helper") {
+                            DaftarPesananScreen(navController = navController)
+                        }
 
                         composable("google") { PilihAkunScreen(navController) }
                         composable("daftar") { DaftarScreen(navController) }
@@ -157,6 +168,18 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+
+                        // ====================================================================
+                        // FIX TUNTAS: RUTE DETAIL PESANAN MITRA SEJARAH SEJAJAR DI NAVHOST
+                        // ====================================================================
+                        composable("detail_pesanan_mitra/{idTransaksi}") { backStackEntry ->
+                            val idTransaksi = backStackEntry.arguments?.getString("idTransaksi") ?: ""
+                            com.example.tolongin.screens.DetailPesananMitraScreen(
+                                navController = navController,
+                                idTransaksi = idTransaksi
+                            )
+                        }
+                        // ====================================================================
                     }
                 }
             }

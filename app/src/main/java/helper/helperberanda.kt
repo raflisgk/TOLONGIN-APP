@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 
 // ── Warna ────────────────────────────────────────────────────────────────────
 private val Primary     = Color(0xFF1A4FAE)
@@ -39,7 +40,7 @@ private val AmberColor  = Color(0xFFF59E0B)
 private val BorderCol   = Color(0xFFE5E7EB)
 
 @Composable
-fun BerandaMitraScreen() {
+fun BerandaMitraScreen(navController: NavHostController) {
     var filterAktif by remember { mutableStateOf("Semua") }
     val filterList = listOf("Semua", "Bersih", "Antar", "Titip", "Lainnya")
 
@@ -69,7 +70,6 @@ fun BerandaMitraScreen() {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Logo icon placeholder
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
@@ -87,7 +87,7 @@ fun BerandaMitraScreen() {
                         )
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Badge AKTIF
@@ -118,6 +118,22 @@ fun BerandaMitraScreen() {
                         ) {
                             Text("🔔", style = TextStyle(fontSize = 16.sp))
                         }
+
+                        // ── TAMBAHAN LOGOUT BUTTON (Agar bisa back ke login saat demo) ──
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFEE2E2))
+                                .clickable {
+                                    navController.navigate("login") {
+                                        popUpTo("beranda_helper") { inclusive = true }
+                                    }
+                                }
+                        ) {
+                            Text("🚪", style = TextStyle(fontSize = 16.sp))
+                        }
                     }
                 }
             }
@@ -131,7 +147,7 @@ fun BerandaMitraScreen() {
                         .padding(bottom = 16.dp)
                 ) {
                     Text(
-                        "HALO MITRA",
+                        "HALO MITRA / HELPER",
                         color = TextLight,
                         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
                     )
@@ -165,7 +181,6 @@ fun BerandaMitraScreen() {
                         .padding(24.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        // Header row
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Top,
@@ -182,7 +197,6 @@ fun BerandaMitraScreen() {
                                     color = Color.White,
                                     style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
                                 )
-                                // Badge +12%
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -196,7 +210,6 @@ fun BerandaMitraScreen() {
                                         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium))
                                 }
                             }
-                            // Wallet icon
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
@@ -208,7 +221,6 @@ fun BerandaMitraScreen() {
                             }
                         }
 
-                        // Tarik Saldo button
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
@@ -231,7 +243,6 @@ fun BerandaMitraScreen() {
                             }
                         }
 
-                        // Statistik button
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
@@ -266,7 +277,6 @@ fun BerandaMitraScreen() {
                         .padding(horizontal = 20.dp)
                         .padding(bottom = 28.dp)
                 ) {
-                    // Jam Kerja
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -298,7 +308,6 @@ fun BerandaMitraScreen() {
                             style = TextStyle(fontSize = 12.sp)
                         )
                     }
-                    // Selesai
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -400,7 +409,6 @@ fun BerandaMitraScreen() {
                             style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
                     }
 
-                    // Tugas card
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -409,7 +417,6 @@ fun BerandaMitraScreen() {
                             .clip(RoundedCornerShape(20.dp))
                             .background(Color.White)
                     ) {
-                        // Garis biru kiri
                         Box(
                             modifier = Modifier
                                 .width(4.dp)
@@ -423,7 +430,6 @@ fun BerandaMitraScreen() {
                                 .fillMaxWidth()
                                 .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
                         ) {
-                            // Badge + timer
                             Row(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
@@ -448,14 +454,12 @@ fun BerandaMitraScreen() {
                                 }
                             }
 
-                            // Judul
                             Text(
                                 "Deep Kitchen Cleaning",
                                 color = TextDark,
                                 style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                             )
 
-                            // Alamat
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.Top
@@ -468,7 +472,6 @@ fun BerandaMitraScreen() {
                                 )
                             }
 
-                            // Progress
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -515,7 +518,6 @@ fun BerandaMitraScreen() {
                     Text("Pesanan Terdekat", color = TextDark,
                         style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
 
-                    // Order 1
                     PesananCard(
                         icon = "🚚",
                         iconBg = Color(0xFFEFF6FF),
@@ -525,7 +527,6 @@ fun BerandaMitraScreen() {
                         price = "Rp 150.000"
                     )
 
-                    // Order 2
                     PesananCard(
                         icon = "🛍",
                         iconBg = Color(0xFFFFF7ED),
@@ -538,7 +539,7 @@ fun BerandaMitraScreen() {
             }
         }
 
-        // ── BOTTOM NAV ────────────────────────────────────────────────────
+        // ── BOTTOM NAV (DENGAN RE-ROUTE KLIK AKTIF KE HALAMAN DAFTAR PESANAN HELPER) ──
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -554,10 +555,15 @@ fun BerandaMitraScreen() {
                 horizontalArrangement = Arrangement.SpaceAround,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                NavItem(icon = "🏠", label = "Beranda", aktif = true)
-                NavItem(icon = "📋", label = "Pesanan", aktif = false)
-                NavItem(icon = "📊", label = "Laporan", aktif = false)
-                NavItem(icon = "👤", label = "Profil", aktif = false)
+                NavItem(icon = "🏠", label = "Beranda", aktif = true, onClick = {})
+
+                // ── FIX DI SINI: Menu Pesanan Sekarang Bisa Diklik Pindah Halaman ──
+                NavItem(icon = "📋", label = "Pesanan", aktif = false, onClick = {
+                    navController.navigate("daftar_pesanan_helper")
+                })
+
+                NavItem(icon = "📊", label = "Laporan", aktif = false, onClick = {})
+                NavItem(icon = "👤", label = "Profil", aktif = false, onClick = {})
             }
         }
     }
@@ -583,7 +589,6 @@ private fun PesananCard(
             .background(Color.White)
             .padding(14.dp)
     ) {
-        // Icon
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -594,7 +599,6 @@ private fun PesananCard(
             Text(icon, style = TextStyle(fontSize = 22.sp))
         }
 
-        // Info
         Column(
             verticalArrangement = Arrangement.spacedBy(3.dp),
             modifier = Modifier.weight(1f)
@@ -612,7 +616,6 @@ private fun PesananCard(
             }
         }
 
-        // Price + Ambil
         Column(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -637,14 +640,15 @@ private fun PesananCard(
     }
 }
 
+// ── FIX DI SINI: Komponen NavItem sekarang menerima parameter onClick ──
 @Composable
-private fun NavItem(icon: String, label: String, aktif: Boolean) {
+private fun NavItem(icon: String, label: String, aktif: Boolean, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .clickable {}
+            .clickable { onClick() } // Menjalankan lambda fungsi klik
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Box(
@@ -670,5 +674,8 @@ private fun NavItem(icon: String, label: String, aktif: Boolean) {
 @Preview(widthDp = 390, heightDp = 844)
 @Composable
 fun BerandaMitraPreview() {
-    BerandaMitraScreen()
+    val dummyNavController = androidx.navigation.compose.rememberNavController()
+    MaterialTheme {
+        BerandaMitraScreen(navController = dummyNavController)
+    }
 }
