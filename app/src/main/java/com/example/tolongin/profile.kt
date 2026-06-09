@@ -32,9 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ProfileScreen(navController: NavController) {
+    val context = LocalContext.current
     Scaffold(
         bottomBar = {
             BottomNavigationBarProfile(navController = navController)
@@ -130,6 +132,8 @@ fun ProfileScreen(navController: NavController) {
             item {
                 Button(
                     onClick = {
+                        val sharedPref = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+                        sharedPref.edit().remove("USER_ROLE").apply()
                         navController.navigate("login") { popUpTo(0) { inclusive = true } }
                     },
                     modifier = Modifier

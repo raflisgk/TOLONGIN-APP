@@ -158,11 +158,12 @@ fun LoginScreen(navController: NavController) {
 
                                     // Simpan sesi email ke memori HP
                                     val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
-                                    sharedPreferences.edit().putString("USER_EMAIL", emailBersih).apply()
+                                    sharedPreferences.edit()
+                                        .putString("USER_EMAIL", emailBersih)
+                                        .putString("USER_ROLE", res.role ?: "user") // ← TAMBAHAN INI
+                                        .apply()
 
-                                    // ====================================================================
-                                    // PERBAIKAN: SELEKSI ROLE OTOMATIS BERDASARKAN HASIL DATA BASE
-                                    // ====================================================================
+// PERBAIKAN: SELEKSI ROLE OTOMATIS BERDASARKAN HASIL DATA BASE
                                     if (res.role == "helper") {
                                         Toast.makeText(context, "Selamat datang Helper!", Toast.LENGTH_SHORT).show()
                                         navController.navigate("beranda_helper") {

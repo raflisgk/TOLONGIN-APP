@@ -39,7 +39,6 @@ interface ApiService {
         @Field("alamat") alamat: String
     ): Call<ResponseModel>
 
-    // SIMPAN TRANSAKSI
     @FormUrlEncoded
     @POST("tolongin_api/insert_transaksi.php")
     fun simpanPemesanan(
@@ -51,7 +50,6 @@ interface ApiService {
         @Field("total_harga") totalHarga: String
     ): Call<ResponseModel>
 
-    // SIMPAN PESANAN
     @FormUrlEncoded
     @POST("tolongin_api/insert_pesanan.php")
     fun insertPesanan(
@@ -74,22 +72,26 @@ interface ApiService {
         @Field("total_harga") totalHarga: String
     ): Call<ResponseModel>
 
-    // AMBIL DATA PESANAN (FIXED: Tanda kurung parameter sudah ditutup dengan benar)
     @FormUrlEncoded
     @POST("tolongin_api/get_pesanan.php")
     fun getPesanan(
         @Field("email") email: String
     ): Call<List<PesananModel>>
-}
 
-// ====================================================================
-// MODEL ASLI: Ditempatkan di luar interface & Sesuai Kolom Database MySQL
-// ====================================================================
-data class PesananModel(
-    val id_transaksi: String = "",
-    val email: String = "",
-    val nama_layanan: String = "",
-    val tanggal: String = "",
-    val status: String = "",
-    val total_harga: String = ""
-)
+    @FormUrlEncoded
+    @POST("tolongin_api/ambil_pesanan.php")
+    fun ambilPesanan(
+        @Field("id_transaksi") idTransaksi: String,
+        @Field("email_helper") emailHelper: String
+    ): Call<ResponseModel>
+
+    @FormUrlEncoded
+    @POST("tolongin_api/update_pesanan.php")
+    fun kirimLaporanForm(
+        @Field("id_transaksi") idTransaksi: String,
+        @Field("status") status: String,
+        @Field("foto_sebelum") fotoSebelum: String?,
+        @Field("foto_sesudah") fotoSesudah: String?,
+        @Field("catatan") catatan: String?
+    ): Call<ResponseModel>
+}

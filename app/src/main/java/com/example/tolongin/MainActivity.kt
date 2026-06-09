@@ -1,5 +1,6 @@
 package com.example.tolongin
 
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,7 +20,9 @@ import com.example.tolongin.viewmodel.PesananViewModel
 import androidx.compose.runtime.LaunchedEffect
 import com.example.tolongin.screens.DaftarPesananScreen
 import com.example.tolongin.screens.BerandaMitraScreen
+import com.example.tolongin.screens.ProfilMitraScreen // <-- PASTIKAN INI TERIMPORT
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,7 +110,20 @@ class MainActivity : ComponentActivity() {
 
                         composable("google") { PilihAkunScreen(navController) }
                         composable("daftar") { DaftarScreen(navController) }
-                        composable("profil") { ProfileScreen(navController) }
+
+                        // ── PERBAIKAN UTAMA: HUBUNGKAN KE PROFIL MITRA BARU DAN KIRIM NAVCONTROLLER ──
+                        composable("profil") {
+                            val context = LocalContext.current
+                            val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                            val role = sharedPreferences.getString("USER_ROLE", "user") ?: "user"
+
+                            if (role == "helper") {
+                                ProfilMitraScreen(navController = navController)
+                            } else {
+                                com.example.tolongin.ProfileScreen(navController = navController)
+                            }
+                        }
+
                         composable("informasipribadi") { InformasiPribadiScreen(navController) }
                         composable("pesan") { PesanScreen(navController) }
 
@@ -170,16 +186,38 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // ====================================================================
-                        // FIX TUNTAS: RUTE DETAIL PESANAN MITRA SEJARAH SEJAJAR DI NAVHOST
+                        // RUTE DETAIL PESANAN MITRA (DITAMBAH PARAMETER STATUS)
                         // ====================================================================
-                        composable("detail_pesanan_mitra/{idTransaksi}") { backStackEntry ->
+                        composable("detail_pesanan_mitra/{idTransaksi}/{status}") { backStackEntry ->
                             val idTransaksi = backStackEntry.arguments?.getString("idTransaksi") ?: ""
+                            val status = backStackEntry.arguments?.getString("status") ?: "Mencari"
                             com.example.tolongin.screens.DetailPesananMitraScreen(
+                                navController = navController,
+                                idTransaksi = idTransaksi,
+                                statusAwal = status
+                            )
+                        }
+
+                        // ====================================================================
+                        // RUTE LAPORAN PENYELESAIAN TUGAS
+                        // ====================================================================
+                        composable("laporan_penyelesaian/{idTransaksi}") { backStackEntry ->
+                            val idTransaksi = backStackEntry.arguments?.getString("idTransaksi") ?: ""
+                            com.example.tolongin.screens.LaporanPenyelesaianScreen(
                                 navController = navController,
                                 idTransaksi = idTransaksi
                             )
                         }
-                        // ====================================================================
+
+                        // ✅ TAMBAHAN: Rute profil mitra (dari navbar)
+                        composable("profil_mitra") {
+                            ProfilMitraScreen(navController = navController)
+                        }
+
+                        // ✅ TAMBAHAN: Rute laporan (dari navbar)
+                        composable("laporan") {
+                            com.example.tolongin.screens.LaporanMitraScreen(navController = navController)
+                        }
                     }
                 }
             }

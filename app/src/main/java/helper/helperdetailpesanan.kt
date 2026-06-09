@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -28,8 +27,6 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.tolongin.PesananModel
-import com.example.tolongin.RetrofitClient
 
 // ── Definisi Warna Sesuai Mockup ─────────────────────────────────────────────
 private val DPrimary      = Color(0xFF005AB2)
@@ -49,7 +46,8 @@ data class LogRiwayat(
 @Composable
 fun DetailPesananMitraScreen(
     navController: NavHostController,
-    idTransaksi: String
+    idTransaksi: String,
+    statusAwal: String
 ) {
     val context = LocalContext.current
 
@@ -207,7 +205,7 @@ fun DetailPesananMitraScreen(
                     ) {
                         Column {
                             Text("Perbaikan AC Split Biking", color = DTextDark, style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.ExtraBold))
-                            Text("ID Pesanan: #$idTransaksi", color = DTextLight, fontSize = 12.sp)
+                            Text("ID Pesanan: $idTransaksi", color = DTextLight, fontSize = 12.sp)
                         }
                         Box(
                             modifier = Modifier
@@ -297,8 +295,8 @@ fun DetailPesananMitraScreen(
                     text = "Riwayat Jalur Progress",
                     color = DTextDark,
                     style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp) // <--- Pastikan di sini tutup kurung
-                ) // <--- KURUNG INI PENTING UNTUK MENUTUP Text()
+                    modifier = Modifier.padding(horizontal = 20.dp).padding(top = 8.dp)
+                )
             }
 
             items(riwayatLogs) { log ->
@@ -354,9 +352,8 @@ fun DetailPesananMitraScreen(
                                 riwayatLogs.add(0, LogRiwayat("10:45 WIB", "Sedang Dikerjakan", "Teknisi sedang melakukan pengecekan freon."))
                             }
                             3 -> {
-                                stepIndex = 4
-                                riwayatLogs.add(0, LogRiwayat("11:30 WIB", "Pesanan Selesai", "AC sukses diperbaiki dan berfungsi dingin kembali."))
-                                Toast.makeText(context, "Selamat, Tugas Anda Selesai dikerjakan! 🎉", Toast.LENGTH_LONG).show()
+                                // ── LANGKAH 2: MELEMPAR ID TRANSAKSI ASLI KE HALAMAN LAPORAN ──
+                                navController.navigate("laporan_penyelesaian/$idTransaksi")
                             }
                             else -> {
                                 navController.navigate("beranda_helper") {
@@ -377,7 +374,7 @@ fun DetailPesananMitraScreen(
     }
 }
 
-// ── PREVIEW BERDIRI MANDIRI DI LUAR (FIXED KURUNG KURAWAL) ───────────────────
+// ── PREVIEW BERDIRI MANDIRI DI LUAR ───────────────────
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 fun DetailPesananMitraPreview() {
@@ -385,7 +382,8 @@ fun DetailPesananMitraPreview() {
         val dummyNavController = rememberNavController()
         DetailPesananMitraScreen(
             navController = dummyNavController,
-            idTransaksi = "TLG-9824"
+            idTransaksi = "TRX-9824",
+            statusAwal = TODO(),
         )
     }
 }
