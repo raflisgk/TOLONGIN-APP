@@ -9,8 +9,8 @@ import java.util.Locale
 
 data class DetailPengirimanState(
     val orderId: String = "TRX-88291",
-    val lokasiJemput: String = "",
-    val lokasiTujuan: String = "",
+    val lokasiJemput: String = "Apartemen Kemang Village, Tower Ritz",
+    val lokasiTujuan: String = "Pakuwon Tower, Lt. 12, Tebet",
     val jenisPaket: String = "Paket Kecil",
     val beratPaket: String = "",
     val deskripsiBarang: String = "",
@@ -56,4 +56,11 @@ class PesananViewModel : ViewModel() {
     fun updateWaktu(waktu: String) { _pesanan.value = _pesanan.value.copy(waktuJemput = waktu) }
     fun updatePenerima(nama: String, hp: String) { _pesanan.value = _pesanan.value.copy(namaPenerima = nama, nomorHP = hp) }
     fun updateCatatan(catatan: String) { _pesanan.value = _pesanan.value.copy(catatanHelper = catatan) }
+
+    fun reset() {
+        _pesanan.value = DetailPengirimanState(
+            lokasiJemput = "",
+            lokasiTujuan = ""
+        )
+    }
 }

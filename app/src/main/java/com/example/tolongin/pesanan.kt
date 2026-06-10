@@ -58,37 +58,92 @@ fun DaftarPesananScreen(
     LaunchedEffect(Unit) {
         if (isPreview) {
             listPesananDb = listOf(
-                PesananModel("TRX-260882", "raflisgk@gmail.com", "Titip Beli (Kopi Susu)", "Hari ini, Segera", "Lunas", "Rp 16.000"),
-                PesananModel("TRX-886929", "raflisgk@gmail.com", "Titip Barang (Paket Kecil)", "Sekarang (Langsung Jemput)", "Lunas", "Rp 18.000"),
-                PesananModel("TRX-933710", "raflisgk@gmail.com", "Titip Barang (Barang Besar)", "Sekarang (Langsung Jemput)", "Lunas", "Rp 18.000")
+                PesananModel(
+                    "TRX-260882",
+                    "raflisgk@gmail.com",
+                    "Titip Beli (Kopi Susu)",
+                    "Hari ini, Segera",
+                    "Lunas",
+                    "Rp 16.000"
+                ),
+                PesananModel(
+                    "TRX-886929",
+                    "raflisgk@gmail.com",
+                    "Titip Barang (Paket Kecil)",
+                    "Sekarang (Langsung Jemput)",
+                    "Lunas",
+                    "Rp 18.000"
+                ),
+                PesananModel(
+                    "TRX-933710",
+                    "raflisgk@gmail.com",
+                    "Titip Barang (Barang Besar)",
+                    "Sekarang (Langsung Jemput)",
+                    "Lunas",
+                    "Rp 18.000"
+                )
             )
             isLoading = false
         } else {
-            val sharedPref = context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
+            val sharedPref =
+                context.getSharedPreferences("TolonginPref", android.content.Context.MODE_PRIVATE)
             val emailLogin = sharedPref.getString("USER_EMAIL", "") ?: ""
 
-            if (emailLogin.isEmpty()) {
-                isLoading = false
-                return@LaunchedEffect
+            val tempList = mutableListOf<PesananModel>()
+
+            // Ambil dari LIST_PESANAN (titip beli & kirim barang)
+            val listJson = org.json.JSONArray(sharedPref.getString("LIST_PESANAN", "[]") ?: "[]")
+            for (i in 0 until listJson.length()) {
+                val obj = listJson.getJSONObject(i)
+                tempList.add(
+                    PesananModel(
+                    id_transaksi = obj.optString("id_transaksi"),
+                    email = obj.optString("email"),
+                    nama_layanan = obj.optString("nama_layanan"),
+                    tanggal = obj.optString("tanggal"),
+                    status = obj.optString("status"),
+                    total_harga = obj.optString("total_harga"),
+                    nama_produk = obj.optString("nama_produk").ifEmpty { null },
+                    catatan = obj.optString("catatan").ifEmpty { null },
+                    alamat_tujuan = obj.optString("alamat_tujuan").ifEmpty { null },
+                    lokasi_jemput = obj.optString("lokasi_jemput").ifEmpty { null },
+                    lokasi_tujuan = obj.optString("lokasi_tujuan").ifEmpty { null },
+                    jenis_paket = obj.optString("jenis_paket").ifEmpty { null },
+                    nama_penerima = obj.optString("nama_penerima").ifEmpty { null },
+                    no_hp_penerima = obj.optString("no_hp_penerima").ifEmpty { null },
+                    catatan_helper = obj.optString("catatan_helper").ifEmpty { null }
+                ))
             }
 
-            RetrofitClient.instance.getPesanan(emailLogin).enqueue(object : Callback<List<PesananModel>> {
-                override fun onResponse(call: Call<List<PesananModel>>, response: Response<List<PesananModel>>) {
-                    isLoading = false
-                    if (response.isSuccessful && response.body() != null) {
-                        listPesananDb = response.body()!!
-                    }
-                }
-                override fun onFailure(call: Call<List<PesananModel>>, t: Throwable) {
-                    isLoading = false
-                    Toast.makeText(context, "Gagal memuat database: ${t.message}", Toast.LENGTH_SHORT).show()
-                }
-            })
+            // Ambil dari database (pembersihan & layanan lain)
+            if (emailLogin.isNotEmpty()) {
+                RetrofitClient.instance.getPesanan(emailLogin)
+                    .enqueue(object : Callback<List<PesananModel>> {
+                        override fun onResponse(
+                            call: Call<List<PesananModel>>,
+                            response: Response<List<PesananModel>>
+                        ) {
+                            isLoading = false
+                            if (response.isSuccessful && response.body() != null) {
+                                listPesananDb = tempList + response.body()!!
+                            } else {
+                                listPesananDb = tempList
+                            }
+                        }
+
+                        override fun onFailure(call: Call<List<PesananModel>>, t: Throwable) {
+                            isLoading = false
+                            listPesananDb = tempList
+                        }
+                    })
+            } else {
+                listPesananDb = tempList
+                isLoading = false
+            }
         }
     }
-
     val listMendatang = listPesananDb.filter {
-        !it.status.contains("Selesai", ignoreCase = true)
+        it.status.contains("Lunas", ignoreCase = true)
     }
     val listRiwayat = listPesananDb.filter {
         it.status.contains("Selesai", ignoreCase = true)
@@ -226,6 +281,7 @@ fun DaftarPesananScreen(
                 Spacer(Modifier.height(16.dp))
 
                 // ── SECTION KHUSUS TITIP BELI ──
+                // ── SECTION KHUSUS TITIP BELI ──
                 if (isTitipBeli) {
                     Text("DETAIL TITIP BELI", fontSize = 10.sp, fontWeight = FontWeight.Bold,
                         color = Color(0xFF9CA3AF), letterSpacing = 0.8.sp,
@@ -242,8 +298,10 @@ fun DaftarPesananScreen(
                         Text("🛒", fontSize = 16.sp)
                         Column {
                             Text("Nama Produk", fontSize = 11.sp, color = Color(0xFF9CA3AF))
-                            Text(pesanan.nama_layanan, fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51))
+                            Text(
+                                pesanan.nama_produk ?: pesanan.nama_layanan,
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                            )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -258,9 +316,32 @@ fun DaftarPesananScreen(
                         Text("📍", fontSize = 16.sp)
                         Column {
                             Text("Alamat Tujuan", fontSize = 11.sp, color = Color(0xFF9CA3AF))
-                            Text("Jl. Kemang Raya No. 10", fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51))
+                            Text(
+                                pesanan.alamat_tujuan ?: "-",
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                            )
                         }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (!pesanan.catatan.isNullOrBlank()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF8FAFC))
+                                .padding(12.dp)
+                        ) {
+                            Text("📝", fontSize = 16.sp)
+                            Column {
+                                Text("Catatan", fontSize = 11.sp, color = Color(0xFF9CA3AF))
+                                Text(
+                                    pesanan.catatan,
+                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
                     }
 
                     Spacer(Modifier.height(16.dp))
@@ -286,8 +367,10 @@ fun DaftarPesananScreen(
                             Column {
                                 Text("LOKASI PENJEMPUTAN", fontSize = 10.sp,
                                     color = Color(0xFF9CA3AF), fontWeight = FontWeight.Bold)
-                                Text("Lokasi Pengguna", fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51))
+                                Text(
+                                    pesanan.lokasi_jemput ?: "-",  // ← data asli
+                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                                )
                             }
                         }
                         HorizontalDivider(color = Color(0xFFE5E7EB))
@@ -296,15 +379,61 @@ fun DaftarPesananScreen(
                             Column {
                                 Text("TUJUAN PENGIRIMAN", fontSize = 10.sp,
                                     color = Color(0xFF9CA3AF), fontWeight = FontWeight.Bold)
-                                Text("Tujuan Pengiriman", fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51))
+                                Text(
+                                    pesanan.lokasi_tujuan ?: "-",  // ← data asli
+                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                                )
                             }
                         }
                     }
 
                     Spacer(Modifier.height(8.dp))
 
-                    val jenisPaket = when {
+                    // Tambah penerima
+                    if (!pesanan.nama_penerima.isNullOrBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF8FAFC))
+                                .padding(12.dp)
+                        ) {
+                            Text("👤", fontSize = 16.sp)
+                            Column {
+                                Text("Penerima", fontSize = 11.sp, color = Color(0xFF9CA3AF))
+                                Text(
+                                    "${pesanan.nama_penerima} (${pesanan.no_hp_penerima ?: "-"})",
+                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                                )
+                            }
+                        }
+                    }
+
+// Tambah catatan helper
+                    if (!pesanan.catatan_helper.isNullOrBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF8FAFC))
+                                .padding(12.dp)
+                        ) {
+                            Text("📝", fontSize = 16.sp)
+                            Column {
+                                Text("Catatan Helper", fontSize = 11.sp, color = Color(0xFF9CA3AF))
+                                Text(
+                                    pesanan.catatan_helper,
+                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212D51)
+                                )
+                            }
+                        }
+                    }
+
+                    val jenisPaket = pesanan.jenis_paket ?: when {
                         pesanan.nama_layanan.contains("Kecil", ignoreCase = true) -> "📦 Paket Kecil (Maks 5 kg)"
                         pesanan.nama_layanan.contains("Sedang", ignoreCase = true) -> "📦 Paket Sedang (5-15 kg)"
                         pesanan.nama_layanan.contains("Besar", ignoreCase = true) -> "🚛 Barang Besar (15-50 kg)"

@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.example.tolongin.RetrofitClient
 import com.example.tolongin.viewmodel.PesananViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -307,16 +308,78 @@ fun KonfirmasiScreen(
                     val idTrxAcak = "TRX-${(100000..999999).random()}"
 
                     val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                    val emailLogin = sharedPreferences.getString("USER_EMAIL", "") ?: ""
+
+                    // Ambil list pesanan lama
+                    val pesananLama = sharedPreferences.getString("LIST_PESANAN", "[]") ?: "[]"
+                    val listJson = org.json.JSONArray(pesananLama)
+
+// Buat objek pesanan baru
+                    val obj = org.json.JSONObject().apply {
+                        put("id_transaksi", idTrxAcak)
+                        put("email", emailLogin)
+                        put("nama_layanan", "Titip Barang (${p.jenisPaket})")
+                        put("tanggal", p.waktuJemput)
+                        put("status", "Lunas")
+                        put("total_harga", p.totalBayarFormatted)
+                        put("lokasi_jemput", p.lokasiJemput)
+                        put("lokasi_tujuan", p.lokasiTujuan)
+                        put("jenis_paket", p.jenisPaket)
+                        put("nama_penerima", p.namaPenerima)
+                        put("no_hp_penerima", p.nomorHP)
+                        put("catatan_helper", p.catatanHelper)
+                    }
+                    listJson.put(obj)
+
                     sharedPreferences.edit().apply {
-                        putString("NAMALAYANAN", "Titip Barang (${p.jenisPaket})")
+                        putString("LIST_PESANAN", listJson.toString())
                         putString("HARGALAYANAN", p.totalBayarFormatted)
+                        putString("NAMALAYANAN", "Titip Barang (${p.jenisPaket})")
                         putString("TRX_ID", idTrxAcak)
                         putString("SELECTED_DATE", p.waktuJemput)
                         apply()
                     }
 
-                    // Memicu aksi onBayar yang telah dihubungkan ke rute QRIS
-                    onBayar()
+                    // Kirim ke database
+                    val body = okhttp3.FormBody.Builder()
+                        .add("id_transaksi", idTrxAcak)
+                        .add("email", emailLogin)
+                        .add("nama_layanan", "Titip Barang (${p.jenisPaket})")
+                        .add("tanggal", p.waktuJemput)
+                        .add("status", "Lunas")
+                        .add("total_harga", p.totalBayarFormatted)
+                        .add("lokasi_jemput", p.lokasiJemput)
+                        .add("lokasi_tujuan", p.lokasiTujuan)
+                        .add("jenis_paket", p.jenisPaket)
+                        .add("deskripsi_barang", p.deskripsiBarang)
+                        .add("waktu_jemput", p.waktuJemput)
+                        .add("nama_penerima", p.namaPenerima)
+                        .add("no_hp_penerima", p.nomorHP)
+                        .add("catatan_helper", p.catatanHelper)
+                        .build()
+
+                    // Taruh ini tepat sebelum val request = okhttp3.Request.Builder()
+                    android.util.Log.d("DEBUG_BODY", "lokasi_jemput: ${p.lokasiJemput}")
+                    android.util.Log.d("DEBUG_BODY", "lokasi_tujuan: ${p.lokasiTujuan}")
+                    android.util.Log.d("DEBUG_BODY", "total_harga: ${p.totalBayarFormatted}")
+
+                    val request = okhttp3.Request.Builder()
+                        .url("http://192.168.0.107/tolongin_api/insert_titip_beli.php")
+                        .post(body)
+                        .build()
+
+                    okhttp3.OkHttpClient().newCall(request).enqueue(object : okhttp3.Callback {
+                        override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                            // Opsional: Bisa diisi logika kalau internet mati/gagal konek
+                        }
+                        override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                            android.util.Log.d("DEBUG_PHP", "Response: ${response.peekBody(Long.MAX_VALUE).string()}")
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                viewModel.reset()
+                                onBayar()
+                            }
+                        }
+                    })
                 },
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = primary),

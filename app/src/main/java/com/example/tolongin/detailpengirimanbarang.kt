@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.tolongin.viewmodel.PesananViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 
 private val BgPage     = Color(0xFFF0F2FA)
@@ -40,6 +41,7 @@ fun DetailPengirimanScreen(
     onLanjut: () -> Unit
 ) {
     val pesanan by viewModel.pesanan.collectAsState()
+    val context = LocalContext.current
 
     var lokasiJemput      by remember { mutableStateOf(pesanan.lokasiJemput.ifEmpty { "Apartemen Kemang Village, Tower Ritz" }) }
     var lokasiTujuan      by remember { mutableStateOf(pesanan.lokasiTujuan.ifEmpty { "Pakuwon Tower, Lt. 12, Tebet" }) }
@@ -453,6 +455,19 @@ fun DetailPengirimanScreen(
                     val paketTerpilih = paketList.find { it.nama == jenisPaketDipilih }
                     val hargaOngkirTerpilih = paketTerpilih?.harga ?: 10000
                     val beratTerpilih = paketTerpilih?.berat ?: ""
+
+                    // Validasi lokasi tidak boleh kosong
+                    if (lokasiJemput.isBlank() || lokasiTujuan.isBlank()) {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Lokasi jemput dan tujuan wajib diisi!",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
+                    }
+
+                    android.util.Log.d("DEBUG_LOKASI", "Jemput: $lokasiJemput")
+                    android.util.Log.d("DEBUG_LOKASI", "Tujuan: $lokasiTujuan")
 
                     viewModel.updateLokasi(lokasiJemput, lokasiTujuan)
                     viewModel.updateJenisPaket(jenisPaketDipilih, beratTerpilih, hargaOngkirTerpilih)

@@ -96,22 +96,60 @@ fun KonfirmasiPesananScreen(
                         // LOGIKA ALUR BARU: TITIP DATA KE MEMORI LALU MASUK KE HALAMAN QRIS
                         // ====================================================================
                         onClick = {
-                            // Generate ID Transaksi acak dengan prefix TRX standard
                             val idTrxAcak = "TRX-${(100000..999999).random()}"
                             val hargaFormatted = formatRupiah(totalBiaya)
 
-                            // Simpan detail Titip Beli ke SharedPreferences agar dibaca otomatis oleh QrisPaymentScreen
                             val sharedPreferences = context.getSharedPreferences("TolonginPref", Context.MODE_PRIVATE)
+                            val emailLogin = sharedPreferences.getString("USER_EMAIL", "") ?: ""
+
+                            val pesananLama = sharedPreferences.getString("LIST_PESANAN", "[]") ?: "[]"
+                            val listJson = org.json.JSONArray(pesananLama)
+
+                            val obj = org.json.JSONObject().apply {
+                                put("id_transaksi", idTrxAcak)
+                                put("email", emailLogin)
+                                put("nama_layanan", "Titip Beli ($namaProduk)")
+                                put("tanggal", "Hari ini, Segera")
+                                put("status", "Lunas")
+                                put("total_harga", hargaFormatted)
+                                put("nama_produk", namaProduk)
+                                put("catatan", catatan)
+                                put("alamat_tujuan", alamat)
+                            }
+                            listJson.put(obj)
+
                             sharedPreferences.edit().apply {
-                                putString("NAMALAYANAN", "Titip Beli ($namaProduk)")
+                                putString("LIST_PESANAN", listJson.toString())
                                 putString("HARGALAYANAN", hargaFormatted)
+                                putString("NAMALAYANAN", "Titip Beli ($namaProduk)")
                                 putString("TRX_ID", idTrxAcak)
                                 putString("SELECTED_DATE", "Hari ini, Segera")
                                 apply()
                             }
+                            // Kirim ke database
+                            val body = okhttp3.FormBody.Builder()
+                                .add("id_transaksi", idTrxAcak)
+                                .add("email", emailLogin)
+                                .add("nama_layanan", "Titip Beli ($namaProduk)")
+                                .add("tanggal", "Hari ini, Segera")
+                                .add("status", "Lunas")
+                                .add("total_harga", hargaFormatted)
+                                .add("nama_produk", namaProduk)
+                                .add("catatan", catatan)
+                                .add("alamat_tujuan", alamat)
+                                .add("jumlah", "1")
+                                .build()
 
-                            // Navigasi langsung ke halaman QRIS Anda
-                            // Catatan: Sesuaikan "qris_payment" dengan nama rute QRIS yang ada di NavHost Anda
+                            val request = okhttp3.Request.Builder()
+                                .url("${RetrofitClient.BASE_URL}insert_titip_beli.php")
+                                .post(body)
+                                .build()
+
+                            okhttp3.OkHttpClient().newCall(request).enqueue(object : okhttp3.Callback {
+                                override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {}
+                                override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {}
+                            })
+
                             navController.navigate("qris_payment")
                         },
                         modifier = Modifier
